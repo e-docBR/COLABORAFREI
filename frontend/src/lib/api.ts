@@ -80,6 +80,34 @@ type UpdateUsuarioPayload = {
   must_change_password?: boolean;
 };
 
+export type NotaResumo = {
+  id: number;
+  disciplina: string;
+  trimestre1?: number | null;
+  trimestre2?: number | null;
+  trimestre3?: number | null;
+  total?: number | null;
+  faltas?: number | null;
+  situacao?: string | null;
+  aluno?: {
+    id: number;
+    nome: string;
+    turma: string;
+    turno: string;
+  } | null;
+};
+
+type ListNotasResponse = {
+  items: NotaResumo[];
+  total: number;
+};
+
+type ListNotasParams = {
+  turma?: string;
+  turno?: string;
+  disciplina?: string;
+};
+
 export type AlunoSummary = {
   id: number;
   nome: string;
@@ -262,6 +290,13 @@ export const api = createApi({
         params: sanitizeParams(params)
       })
     }),
+    listNotas: builder.query<ListNotasResponse, ListNotasParams | void>({
+      query: (params) => ({
+        url: "/notas",
+        params: sanitizeParams(params ?? undefined)
+      }),
+      providesTags: ["Notas"]
+    }),
     changePassword: builder.mutation<void, { current_password: string; new_password: string }>({
       query: (body) => ({
         url: "/auth/change-password",
@@ -312,6 +347,7 @@ export const {
   useUploadBoletimMutation,
   useGetRelatorioQuery,
   useGetGraficoQuery,
+  useListNotasQuery,
   useChangePasswordMutation,
   useListUsuariosQuery,
   useCreateUsuarioMutation,
