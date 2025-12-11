@@ -24,7 +24,60 @@ type LoginResponse = {
     username: string;
     role?: string;
     is_admin?: boolean;
+    aluno_id?: number | null;
+    must_change_password?: boolean;
   };
+};
+
+export type UsuarioAccount = {
+  id: number;
+  username: string;
+  role?: string;
+  is_admin: boolean;
+  aluno_id?: number | null;
+  must_change_password: boolean;
+  aluno?: {
+    id: number;
+    nome: string;
+    matricula: string;
+    turma: string;
+    turno: string;
+  } | null;
+};
+
+type ListUsuariosResponse = {
+  items: UsuarioAccount[];
+  meta: {
+    page: number;
+    per_page: number;
+    total: number;
+  };
+};
+
+type ListUsuariosParams = {
+  page?: number;
+  per_page?: number;
+  q?: string;
+  role?: string;
+};
+
+type CreateUsuarioPayload = {
+  username: string;
+  password: string;
+  role?: string;
+  is_admin?: boolean;
+  aluno_id?: number | null;
+  must_change_password?: boolean;
+};
+
+type UpdateUsuarioPayload = {
+  id: number;
+  username?: string;
+  password?: string;
+  role?: string;
+  is_admin?: boolean;
+  aluno_id?: number | null;
+  must_change_password?: boolean;
 };
 
 export type AlunoSummary = {
@@ -145,7 +198,7 @@ export const api = createApi({
       return headers;
     }
   }),
-  tagTypes: ["Dashboard", "Alunos", "Notas", "Uploads", "Turmas"],
+  tagTypes: ["Dashboard", "Alunos", "Notas", "Uploads", "Turmas", "Usuarios"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (body) => ({
@@ -208,6 +261,43 @@ export const api = createApi({
         url: `/graficos/${slug}`,
         params: sanitizeParams(params)
       })
+    }),
+    changePassword: builder.mutation<void, { current_password: string; new_password: string }>({
+      query: (body) => ({
+        url: "/auth/change-password",
+        method: "POST",
+        body
+      })
+    }),
+    listUsuarios: builder.query<ListUsuariosResponse, ListUsuariosParams | void>({
+      query: (params) => ({
+        url: "/usuarios",
+        params: sanitizeParams(params ?? undefined)
+      }),
+      providesTags: ["Usuarios"]
+    }),
+    createUsuario: builder.mutation<UsuarioAccount, CreateUsuarioPayload>({
+      query: (body) => ({
+        url: "/usuarios",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Usuarios"]
+    }),
+    updateUsuario: builder.mutation<UsuarioAccount, UpdateUsuarioPayload>({
+      query: ({ id, ...body }) => ({
+        url: `/usuarios/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: (result, _error, { id }) => ["Usuarios", { type: "Usuarios", id }]
+    }),
+    deleteUsuario: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/usuarios/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Usuarios"]
     })
   })
 });
@@ -221,5 +311,10 @@ export const {
   useGetTurmaAlunosQuery,
   useUploadBoletimMutation,
   useGetRelatorioQuery,
-  useGetGraficoQuery
+  useGetGraficoQuery,
+  useChangePasswordMutation,
+  useListUsuariosQuery,
+  useCreateUsuarioMutation,
+  useUpdateUsuarioMutation,
+  useDeleteUsuarioMutation
 } = api;

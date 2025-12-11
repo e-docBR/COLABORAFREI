@@ -11,8 +11,11 @@ import { GraficosPage } from "../features/graficos/GraficosPage";
 import { RelatoriosPage } from "../features/relatorios/RelatoriosPage";
 import { RelatorioDetailPage } from "../features/relatorios/RelatorioDetailPage";
 import { UploadsPage } from "../features/uploads/UploadsPage";
+import { UsuariosPage } from "../features/usuarios/UsuariosPage";
 import { LoginPage } from "../features/auth/LoginPage";
+import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { store } from "./store";
+import { MeuBoletimPage } from "../features/alunos/MeuBoletimPage";
 
 const requireAuth = async () => {
   const state = store.getState();
@@ -38,11 +41,17 @@ export const appRouter = createBrowserRouter([
       { path: "graficos", element: <GraficosPage /> },
       { path: "relatorios", element: <RelatoriosPage /> },
       { path: "relatorios/:slug", element: <RelatorioDetailPage /> },
-      { path: "uploads", element: <UploadsPage /> }
+      { path: "uploads", element: <UploadsPage /> },
+      { path: "usuarios", element: <UsuariosPage /> },
+      { path: "meu-boletim", element: <MeuBoletimPage /> }
     ]
   },
   {
     path: "/login",
     element: <LoginPage />
+  },
+  {
+    path: "/alterar-senha",
+    element: <ChangePasswordPage />
   }
 ]);

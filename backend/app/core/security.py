@@ -19,8 +19,16 @@ def verify_password(raw_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(raw_password, hashed_password)
 
 
-def generate_tokens(identity: str, roles: list[str]) -> dict[str, str]:
+def generate_tokens(identity: str, roles: list[str], extra_claims: dict[str, object] | None = None) -> dict[str, str]:
     claims = {"roles": roles}
-    access = create_access_token(identity=identity, additional_claims=claims, expires_delta=timedelta(minutes=30))
+    if extra_claims:
+        for key, value in extra_claims.items():
+            if value is not None:
+                claims[key] = value
+    access = create_access_token(
+        identity=identity,
+        additional_claims=claims,
+        expires_delta=timedelta(minutes=30),
+    )
     refresh = create_refresh_token(identity=identity, additional_claims=claims)
     return {"access_token": access, "refresh_token": refresh}

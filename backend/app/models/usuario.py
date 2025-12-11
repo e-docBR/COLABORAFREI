@@ -1,6 +1,6 @@
 """Usuario model."""
 from sqlalchemy import Boolean, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.database import Base
 
@@ -15,3 +15,4 @@ class Usuario(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     aluno_id: Mapped[int | None] = mapped_column(ForeignKey("alunos.id"), nullable=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
+    aluno = relationship("Aluno", back_populates="usuario")

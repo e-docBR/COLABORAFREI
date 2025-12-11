@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..core.database import SessionLocal
 from ..models import Aluno, Nota
+from .accounts import ensure_aluno_user
 
 
 @dataclass(slots=True)
@@ -239,12 +240,14 @@ def _upsert_aluno(session: Session, record: ParsedAlunoRecord) -> Aluno:
         )
         session.add(aluno)
         session.flush()
+        ensure_aluno_user(session, aluno)
         return aluno
     aluno.nome = record.nome or aluno.nome
     if record.turma:
         aluno.turma = record.turma
     if record.turno:
         aluno.turno = record.turno
+    ensure_aluno_user(session, aluno)
     return aluno
 
 

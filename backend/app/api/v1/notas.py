@@ -1,6 +1,6 @@
 """Notas endpoints."""
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, jwt_required
 from sqlalchemy.orm import joinedload
 
 from ...core.database import session_scope
@@ -34,6 +34,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/notas")
     @jwt_required()
     def list_notas():
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         turma = request.args.get("turma")
         turno = request.args.get("turno")
         disciplina = request.args.get("disciplina")

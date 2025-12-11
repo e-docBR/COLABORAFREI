@@ -6,7 +6,7 @@ from unicodedata import normalize
 from urllib.parse import unquote
 
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, jwt_required
 from sqlalchemy import func
 
 from ...core.database import session_scope
@@ -19,6 +19,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/turmas")
     @jwt_required()
     def list_turmas():
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         with session_scope() as session:
             query = (
                 session.query(
@@ -50,6 +52,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/turmas/<path:turma_nome>/alunos")
     @jwt_required()
     def list_alunos_por_turma(turma_nome: str):
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         turma_decoded = unquote(turma_nome)
         with session_scope() as session:
             turma_real = _resolve_turma_nome(session, turma_decoded)

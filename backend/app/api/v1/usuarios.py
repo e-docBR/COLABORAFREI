@@ -1,0 +1,207 @@
+"""Endpoints para gerenciamento administrativo de usuários."""
+from __future__ import annotations
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
+
+from ...core.database import session_scope
+from ...core.security import hash_password
+from ...models import Aluno, Usuario
+from ...services.accounts import ensure_all_aluno_users
+
+
+def serialize_usuario(usuario: Usuario) -> dict[str, object]:
+    aluno_data = None
+    if usuario.aluno:
+        aluno_data = {
+            "id": usuario.aluno.id,
+            "nome": usuario.aluno.nome,
+            "matricula": usuario.aluno.matricula,
+            "turma": usuario.aluno.turma,
+            "turno": usuario.aluno.turno,
+        }
+    return {
+        "id": usuario.id,
+        "username": usuario.username,
+        "role": usuario.role,
+        "is_admin": usuario.is_admin,
+        "aluno_id": usuario.aluno_id,
+        "must_change_password": usuario.must_change_password,
+        "aluno": aluno_data,
+    }
+
+
+def _is_admin() -> bool:
+    roles = get_jwt().get("roles") or []
+    return "admin" in roles
+
+
+def register(parent: Blueprint) -> None:
+    bp = Blueprint("usuarios", __name__)
+
+    @bp.get("/usuarios")
+    @jwt_required()
+    def list_usuarios():
+        if not _is_admin():
+            return jsonify({"error": "Acesso restrito"}), 403
+
+        page = max(1, int(request.args.get("page", 1)))
+        per_page = min(100, int(request.args.get("per_page", 20)))
+        query_text = request.args.get("q")
+        role_filter = request.args.get("role")
+
+        with session_scope() as session:
+            ensure_all_aluno_users(session)
+            query = (
+                session.query(Usuario)
+                .options(joinedload(Usuario.aluno))
+                .outerjoin(Aluno)
+            )
+            if query_text:
+                like = f"%{query_text}%"
+                query = query.filter(
+                    or_(
+                        Usuario.username.ilike(like),
+                        Aluno.nome.ilike(like),
+                        Aluno.matricula.ilike(like),
+                    )
+                )
+            if role_filter:
+                query = query.filter(Usuario.role == role_filter)
+
+            total = query.count()
+            usuarios = (
+                query.order_by(func.lower(Usuario.username))
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
+
+        return jsonify(
+            {
+                "items": [serialize_usuario(usuario) for usuario in usuarios],
+                "meta": {
+                    "page": page,
+                    "per_page": per_page,
+                    "total": total,
+                },
+            }
+        )
+
+    @bp.post("/usuarios")
+    @jwt_required()
+    def create_usuario():
+        if not _is_admin():
+            return jsonify({"error": "Acesso restrito"}), 403
+
+        payload = request.get_json() or {}
+        username = (payload.get("username") or "").strip()
+        password = payload.get("password")
+        role = payload.get("role") or "professor"
+        aluno_id = payload.get("aluno_id")
+
+        if not username or not password:
+            return jsonify({"error": "Usuário e senha são obrigatórios"}), 400
+
+        with session_scope() as session:
+            existing = session.query(Usuario).filter(Usuario.username == username).first()
+            if existing:
+                return jsonify({"error": "Usuário já existe"}), 409
+
+            if aluno_id is not None:
+                aluno = session.get(Aluno, aluno_id)
+                if not aluno:
+                    return jsonify({"error": "Aluno informado não existe"}), 400
+
+            usuario = Usuario(
+                username=username,
+                password_hash=hash_password(password),
+                role=role,
+                is_admin=bool(payload.get("is_admin")),
+                aluno_id=aluno_id,
+                must_change_password=payload.get("must_change_password", True),
+            )
+            session.add(usuario)
+            session.flush()
+            return jsonify(serialize_usuario(usuario)), 201
+
+    @bp.patch("/usuarios/<int:usuario_id>")
+    @jwt_required()
+    def update_usuario(usuario_id: int):
+        if not _is_admin():
+            return jsonify({"error": "Acesso restrito"}), 403
+
+        payload = request.get_json() or {}
+        if not payload:
+            return jsonify({"error": "Nenhum dado informado"}), 400
+
+        with session_scope() as session:
+            usuario = session.get(Usuario, usuario_id)
+            if not usuario:
+                return jsonify({"error": "Usuário não encontrado"}), 404
+
+            new_username = payload.get("username")
+            if new_username is not None:
+                new_username = new_username.strip()
+                if not new_username:
+                    return jsonify({"error": "Usuário inválido"}), 400
+                existing = (
+                    session.query(Usuario)
+                    .filter(Usuario.username == new_username, Usuario.id != usuario.id)
+                    .first()
+                )
+                if existing:
+                    return jsonify({"error": "Usuário já existe"}), 409
+                usuario.username = new_username
+
+            if "role" in payload:
+                usuario.role = payload.get("role") or usuario.role
+
+            if "is_admin" in payload:
+                usuario.is_admin = bool(payload.get("is_admin"))
+
+            if "must_change_password" in payload:
+                usuario.must_change_password = bool(payload.get("must_change_password"))
+
+            if "aluno_id" in payload:
+                aluno_id_value = payload.get("aluno_id")
+                if aluno_id_value is None:
+                    usuario.aluno_id = None
+                else:
+                    aluno = session.get(Aluno, aluno_id_value)
+                    if not aluno:
+                        return jsonify({"error": "Aluno informado não existe"}), 400
+                    usuario.aluno_id = aluno.id
+
+            if payload.get("password"):
+                usuario.password_hash = hash_password(payload["password"])
+                usuario.must_change_password = payload.get("must_change_password", True)
+
+            session.add(usuario)
+            session.flush()
+            session.refresh(usuario)
+            payload = serialize_usuario(usuario)
+
+        return jsonify(payload)
+
+    @bp.delete("/usuarios/<int:usuario_id>")
+    @jwt_required()
+    def delete_usuario(usuario_id: int):
+        if not _is_admin():
+            return jsonify({"error": "Acesso restrito"}), 403
+
+        current_user_id = int(get_jwt_identity())
+        if current_user_id == usuario_id:
+            return jsonify({"error": "Não é possível remover o próprio usuário"}), 400
+
+        with session_scope() as session:
+            usuario = session.get(Usuario, usuario_id)
+            if not usuario:
+                return jsonify({"error": "Usuário não encontrado"}), 404
+            session.delete(usuario)
+
+        return ("", 204)
+
+    parent.register_blueprint(bp)

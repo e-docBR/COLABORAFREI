@@ -8,6 +8,8 @@ interface AuthState {
     username: string;
     role?: string;
     is_admin?: boolean;
+    aluno_id?: number | null;
+    must_change_password?: boolean;
   };
 }
 
@@ -33,9 +35,12 @@ const authSlice = createSlice({
       state.accessToken = undefined;
       state.refreshToken = undefined;
       state.user = undefined;
+    },
+    updateUser: (state, action: PayloadAction<AuthState["user"] | undefined>) => {
+      state.user = action.payload;
     }
   }
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logout, updateUser } = authSlice.actions;
 export const authReducer = authSlice.reducer;

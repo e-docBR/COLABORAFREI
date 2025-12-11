@@ -2,7 +2,7 @@
 from math import ceil
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy import func
 
 from ...core.database import session_scope
@@ -39,6 +39,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/alunos")
     @jwt_required()
     def list_alunos():
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         page = max(1, int(request.args.get("page", 1)))
         per_page = min(100, int(request.args.get("per_page", 20)))
         turno = request.args.get("turno")
@@ -89,6 +91,11 @@ def register(parent: Blueprint) -> None:
     @bp.get("/alunos/<int:aluno_id>")
     @jwt_required()
     def retrieve_aluno(aluno_id: int):
+        claims = get_jwt()
+        aluno_claim_id = claims.get("aluno_id")
+        if "aluno" in (claims.get("roles") or []):
+            if not aluno_claim_id or int(aluno_claim_id) != int(aluno_id):
+                return jsonify({"error": "Acesso restrito"}), 403
         with session_scope() as session:
             aluno = session.get(Aluno, aluno_id)
             if not aluno:

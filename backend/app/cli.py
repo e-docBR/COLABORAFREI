@@ -7,6 +7,7 @@ import click
 from .core.database import Base, engine, session_scope
 from .core.security import hash_password
 from .models import Aluno, Nota, Usuario
+from .services.accounts import ensure_aluno_user
 
 
 TURMAS = [
@@ -51,6 +52,9 @@ def register_cli(app):
                     session.add(aluno)
                     alunos.append(aluno)
             session.flush()
+
+            for aluno in alunos:
+                ensure_aluno_user(session, aluno)
 
             for aluno in alunos:
                 for disciplina in DISCIPLINAS:

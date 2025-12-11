@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Callable
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, jwt_required
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/graficos/<string:slug>")
     @jwt_required()
     def get_grafico(slug: str):
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         builder = GRAPH_BUILDERS.get(slug)
         if not builder:
             return jsonify({"error": "Gráfico não encontrado"}), 404

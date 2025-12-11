@@ -16,11 +16,23 @@ export const LoginPage = () => {
   const [login, { isLoading }] = useLoginMutation();
 
   const resolveErrorMessage = (err: unknown) => {
-    if (err && typeof err === "object" && "data" in err) {
-      const data = (err as FetchBaseQueryError).data;
-      if (typeof data === "string") return data;
+    if (err && typeof err === "object" && "status" in err) {
+      const apiError = err as FetchBaseQueryError;
+      const data = apiError.data;
+      if (typeof data === "string") {
+        return data;
+      }
       if (data && typeof data === "object" && "error" in data) {
         return String((data as { error?: string }).error || "Falha no login");
+      }
+      if ("error" in apiError && typeof apiError.error === "string") {
+        if (apiError.error.toLowerCase().includes("fetch")) {
+          return "Servidor indisponível. Verifique se o backend está ativo (porta 5000).";
+        }
+        return apiError.error;
+      }
+      if (typeof apiError.status === "number" && apiError.status >= 500) {
+        return "Servidor indisponível. Tente novamente em instantes.";
       }
     }
     return err instanceof Error ? err.message : "Falha no login";
@@ -32,7 +44,11 @@ export const LoginPage = () => {
     try {
       const response = await login({ username, password }).unwrap();
       dispatch(setCredentials(response));
-      navigate("/");
+      if (response.user?.must_change_password) {
+        navigate("/alterar-senha", { replace: true });
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(resolveErrorMessage(err));
     }

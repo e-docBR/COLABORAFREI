@@ -15,3 +15,4 @@ class Aluno(Base):
     turno: Mapped[str] = mapped_column(String(32), nullable=False)
 
     notas = relationship("Nota", back_populates="aluno", cascade="all, delete-orphan")
+    usuario = relationship("Usuario", back_populates="aluno", uselist=False)

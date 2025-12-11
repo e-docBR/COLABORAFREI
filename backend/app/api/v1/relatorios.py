@@ -1,6 +1,6 @@
 """Relatório endpoints."""
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, jwt_required
 from sqlalchemy import func
 
 from ...core.database import session_scope
@@ -84,6 +84,8 @@ def register(parent: Blueprint) -> None:
     @bp.get("/relatorios/<string:slug>")
     @jwt_required()
     def get_relatorio(slug: str):
+        if "aluno" in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso restrito"}), 403
         builder = REPORT_BUILDERS.get(slug)
         if not builder:
             return jsonify({"error": "Relatório não encontrado"}), 404
