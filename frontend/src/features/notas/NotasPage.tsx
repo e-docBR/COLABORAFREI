@@ -3,7 +3,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Box, Card, CardContent, Stack, TextField, InputAdornment, Alert, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
-import { useListNotasQuery } from "../../lib/api";
+import { useListNotasQuery, useListTurmasQuery, useGetNotasFiltrosQuery } from "../../lib/api";
 
 const gradeFormatter = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "—";
@@ -15,35 +15,35 @@ const columns: GridColDef[] = [
   { field: "aluno", headerName: "Aluno", flex: 1, minWidth: 220 },
   { field: "disciplina", headerName: "Disciplina", flex: 1, minWidth: 180 },
   {
-    field: "t1",
+    field: "trimestre1",
     headerName: "T1",
     width: 90,
-    valueFormatter: (params: { value?: number | null }) => gradeFormatter(params?.value ?? null)
+    renderCell: (params) => gradeFormatter(params.value)
   },
   {
-    field: "t2",
+    field: "trimestre2",
     headerName: "T2",
     width: 90,
-    valueFormatter: (params: { value?: number | null }) => gradeFormatter(params?.value ?? null)
+    renderCell: (params) => gradeFormatter(params.value)
   },
   {
-    field: "t3",
+    field: "trimestre3",
     headerName: "T3",
     width: 90,
-    valueFormatter: (params: { value?: number | null }) => gradeFormatter(params?.value ?? null)
+    renderCell: (params) => gradeFormatter(params.value)
   },
   {
     field: "total",
     headerName: "Total",
     width: 110,
-    valueFormatter: (params: { value?: number | null }) => gradeFormatter(params?.value ?? null)
+    renderCell: (params) => gradeFormatter(params.value)
   },
   {
     field: "faltas",
     headerName: "Faltas",
     width: 110,
-    valueFormatter: (params: { value?: number | null }) => {
-      const value = params?.value;
+    renderCell: (params) => {
+      const value = params.value;
       return value === null || value === undefined ? "—" : `${value}`;
     }
   }
@@ -88,6 +88,8 @@ export const NotasPage = () => {
   );
 
   const { data, isFetching, isError } = useListNotasQuery(queryFilters);
+  const { data: turmasData } = useListTurmasQuery();
+  const { data: filtrosData } = useGetNotasFiltrosQuery();
   const notas = data?.items ?? [];
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -103,24 +105,24 @@ export const NotasPage = () => {
     id: `${nota.aluno?.id ?? "na"}-${nota.disciplina}`,
     aluno: `${nota.aluno?.nome ?? "Aluno sem nome"}${nota.aluno?.turma ? ` · ${nota.aluno.turma}` : ""}`,
     disciplina: nota.disciplina,
-    t1: nota.trimestre1 ?? null,
-    t2: nota.trimestre2 ?? null,
-    t3: nota.trimestre3 ?? null,
+    trimestre1: nota.trimestre1 ?? null,
+    trimestre2: nota.trimestre2 ?? null,
+    trimestre3: nota.trimestre3 ?? null,
     total: nota.total ?? null,
     faltas: nota.faltas ?? null
   }));
 
   const turmaOptions = useMemo(
-    () => Array.from(new Set(notas.map((nota) => nota.aluno?.turma).filter((value): value is string => Boolean(value)))).sort(),
-    [notas]
+    () => turmasData?.items.map((t) => t.turma).sort() ?? [],
+    [turmasData]
   );
   const disciplinaOptions = useMemo(
-    () => Array.from(new Set(notas.map((nota) => nota.disciplina).filter(Boolean))).sort(),
-    [notas]
+    () => filtrosData?.disciplinas ?? [],
+    [filtrosData]
   );
   const turnoOptions = useMemo(
-    () => Array.from(new Set(notas.map((nota) => nota.aluno?.turno).filter((value): value is string => Boolean(value)))).sort(),
-    [notas]
+    () => Array.from(new Set(turmasData?.items.map((t) => t.turno) ?? [])).sort(),
+    [turmasData]
   );
 
   return (

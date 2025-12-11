@@ -108,6 +108,10 @@ type ListNotasParams = {
   disciplina?: string;
 };
 
+type NotasFiltrosResponse = {
+  disciplinas: string[];
+};
+
 export type AlunoSummary = {
   id: number;
   nome: string;
@@ -297,6 +301,10 @@ export const api = createApi({
       }),
       providesTags: ["Notas"]
     }),
+    getNotasFiltros: builder.query<NotasFiltrosResponse, void>({
+      query: () => "/notas/filtros",
+      providesTags: ["Notas"]
+    }),
     changePassword: builder.mutation<void, { current_password: string; new_password: string }>({
       query: (body) => ({
         url: "/auth/change-password",
@@ -348,6 +356,7 @@ export const {
   useGetRelatorioQuery,
   useGetGraficoQuery,
   useListNotasQuery,
+  useGetNotasFiltrosQuery,
   useChangePasswordMutation,
   useListUsuariosQuery,
   useCreateUsuarioMutation,

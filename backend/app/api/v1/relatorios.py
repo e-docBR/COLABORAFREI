@@ -59,15 +59,38 @@ def build_alunos_em_risco(session):
 
 
 def build_disciplinas_notas_baixas(session):
+    # Mapeamento de disciplinas para normalização
+    normalizacao = {
+        "ARTES": "ARTE",
+        "INGLÊS": "LÍNGUA INGLESA",
+        "INGLES": "LÍNGUA INGLESA",
+        "LÍNGUA PORTUGUÊSA": "LÍNGUA PORTUGUESA",
+        "LINGUA PORTUGUESA": "LÍNGUA PORTUGUESA",
+    }
+    
     query = (
         session.query(Nota.disciplina, func.avg(Nota.total).label("media"))
         .group_by(Nota.disciplina)
         .order_by(func.avg(Nota.total))
     )
-    return [
-        {"disciplina": disciplina, "media": round(float(media), 2)}
-        for disciplina, media in query.all()
-    ]
+    
+    # Agrupa por disciplina normalizada
+    disciplinas_map = {}
+    for disciplina, media in query.all():
+        disc_normalizada = normalizacao.get(disciplina.upper(), disciplina)
+        if disc_normalizada not in disciplinas_map:
+            disciplinas_map[disc_normalizada] = []
+        disciplinas_map[disc_normalizada].append(float(media))
+    
+    # Calcula média para cada disciplina normalizada
+    result = []
+    for disciplina, medias in disciplinas_map.items():
+        media_final = sum(medias) / len(medias)
+        result.append({"disciplina": disciplina, "media": round(media_final, 1)})
+    
+    # Ordena por média crescente
+    result.sort(key=lambda x: x["media"])
+    return result
 
 
 REPORT_BUILDERS = {
