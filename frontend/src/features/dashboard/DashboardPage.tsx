@@ -1,18 +1,13 @@
+import { useMemo } from "react";
 import { Alert, Box, Card, CardContent, Grid2 as Grid, Skeleton, Typography } from "@mui/material";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
 
-import { useGetDashboardKpisQuery } from "../../lib/api";
+import { useGetDashboardKpisQuery, useGetGraficoQuery } from "../../lib/api";
 
 const lineData = [
   { trimestre: "1º", media: 14.8 },
   { trimestre: "2º", media: 15.1 },
   { trimestre: "3º", media: 15.4 }
-];
-
-const pieData = [
-  { name: "Aprovados", value: 78 },
-  { name: "Recuperação", value: 15 },
-  { name: "Reprovados", value: 7 }
 ];
 
 const pieColors = ["#18b26b", "#f5a524", "#ff5c5c"];
@@ -28,6 +23,27 @@ type KpiCard = {
 
 export const DashboardPage = () => {
   const { data, isLoading, isError } = useGetDashboardKpisQuery();
+  const {
+    data: situacaoResponse,
+    isLoading: isSituacaoLoading,
+    isError: isSituacaoError
+  } = useGetGraficoQuery({ slug: "situacao-distribuicao" });
+
+  const situacaoChartData = useMemo(
+    () =>
+      (situacaoResponse?.dados ?? []).map((entry) => {
+        const typedEntry = entry as { situacao?: unknown; total?: unknown };
+        const situacao = typeof typedEntry.situacao === "string" ? typedEntry.situacao : "Sem classificação";
+        const totalValue =
+          typeof typedEntry.total === "number"
+            ? typedEntry.total
+            : Number(typeof typedEntry.total === "string" ? typedEntry.total : 0);
+        return { name: situacao, value: totalValue };
+      }),
+    [situacaoResponse]
+  );
+
+  const isSituacaoEmpty = !isSituacaoLoading && situacaoChartData.length === 0;
 
   const kpiCards: KpiCard[] = [
     {
@@ -108,15 +124,38 @@ export const DashboardPage = () => {
                 Situação geral
               </Typography>
               <Box height={280}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
-                      {pieData.map((entry, index) => (
-                        <Cell key={entry.name} fill={pieColors[index]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                {isSituacaoError && (
+                  <Alert severity="error">Não foi possível carregar a distribuição das situações.</Alert>
+                )}
+                {!isSituacaoError && (
+                  <Box height="100%" display="flex" alignItems="center" justifyContent="center">
+                    {isSituacaoLoading ? (
+                      <Skeleton variant="circular" width={200} height={200} />
+                    ) : isSituacaoEmpty ? (
+                      <Typography color="text.secondary">Sem dados para o período selecionado.</Typography>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={situacaoChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={60}
+                            outerRadius={100}
+                            labelLine={false}
+                            label={({ name, value }) => `${name}: ${value}`}
+                          >
+                            {situacaoChartData.map((entry, index) => (
+                              <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => `${value} alunos`} />
+                          <Legend verticalAlign="bottom" height={36} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </Box>
+                )}
               </Box>
             </CardContent>
           </Card>

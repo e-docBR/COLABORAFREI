@@ -105,3 +105,8 @@ colaboraFREI/
 - `enqueue_pdf` gera um `job_id`, processa o arquivo com `parse_pdf` e aplica as notas: matrículas existentes são atualizadas; novas são criadas automaticamente.
 - Frontend ganhou a página `/uploads` com formulário (turno + turma + arquivo) e *feedback* de sucesso/erro usando `useUploadBoletimMutation` (RTK Query).
 - Alertas rápidos instruem o usuário sobre como o processamento organiza as pastas e como os dados serão refletidos no dashboard após a ingestão.
+
+## 8. Atualizações — 12/12/2025
+- **Dashboard:** o gráfico "Situação geral" agora consome `/graficos/situacao-distribuicao`, exibe estados de carregamento/erro e legenda dinâmica.
+- **Métricas por disciplina:** `_disciplinas_medias` passou a somar notas e contabilizar entradas antes de normalizar para evitar distorções em disciplinas com rótulos unificados (ex.: LÍNGUA INGLESA).
+- **Shell autenticado:** o topo da aplicação ganhou menu de usuário com ações de troca de senha e logout, além de rótulos humanizados para papéis (Administrador, Coordenador, etc.).

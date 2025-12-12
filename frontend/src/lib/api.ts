@@ -206,6 +206,11 @@ type RelatorioResponse = {
   dados: Array<Record<string, unknown>>;
 };
 
+export type GraficoResponse<T = Record<string, unknown>> = {
+  slug: string;
+  dados: T[];
+};
+
 export type GraficoQueryArgs = {
   slug: string;
   turno?: string;
@@ -288,7 +293,7 @@ export const api = createApi({
         url: `/relatorios/${slug}`
       })
     }),
-    getGrafico: builder.query<RelatorioResponse, GraficoQueryArgs>({
+    getGrafico: builder.query<GraficoResponse, GraficoQueryArgs>({
       query: ({ slug, ...params }) => ({
         url: `/graficos/${slug}`,
         params: sanitizeParams(params)

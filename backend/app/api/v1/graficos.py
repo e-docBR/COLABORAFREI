@@ -68,7 +68,11 @@ def _resolve_trimestre_column(trimestre: str | None):
 
 def _disciplinas_medias(session, turno: str | None, turma: str | None, trimestre: str | None):
     column = _resolve_trimestre_column(trimestre)
-    query = session.query(Nota.disciplina, func.avg(column).label("media"))
+    query = session.query(
+        Nota.disciplina,
+        func.sum(column).label("soma"),
+        func.count(column).label("quantidade"),
+    )
     query = query.join(Aluno)
     if turno:
         query = query.filter(Aluno.turno == turno)
@@ -77,11 +81,11 @@ def _disciplinas_medias(session, turno: str | None, turma: str | None, trimestre
     query = query.group_by(Nota.disciplina)
 
     agregados: dict[str, dict[str, float]] = {}
-    for disciplina, media in query.all():
+    for disciplina, soma, quantidade in query.all():
         disciplina_normalizada = _normalize_disciplina(disciplina)
         bucket = agregados.setdefault(disciplina_normalizada, {"soma": 0.0, "quantidade": 0})
-        bucket["soma"] += float(media or 0.0)
-        bucket["quantidade"] += 1
+        bucket["soma"] += float(soma or 0.0)
+        bucket["quantidade"] += int(quantidade or 0)
 
     resultados = []
     for disciplina_normalizada, valores in agregados.items():
