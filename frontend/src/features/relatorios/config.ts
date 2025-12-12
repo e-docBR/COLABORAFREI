@@ -4,7 +4,8 @@ export type RelatorioSlug =
   | "turmas-mais-faltas"
   | "melhores-medias"
   | "alunos-em-risco"
-  | "disciplinas-notas-baixas";
+  | "disciplinas-notas-baixas"
+  | "melhores-alunos";
 
 export type RelatorioColumn = {
   key: string;
@@ -85,6 +86,22 @@ export const RELATORIOS: RelatorioDefinition[] = [
         label: "Média",
         align: "right",
         render: (row) => asNumber(row.media, 1),
+      },
+    ],
+  },
+  {
+    slug: "melhores-alunos",
+    title: "Melhores alunos",
+    description: "Top 10 alunos com as maiores médias",
+    columns: [
+      { key: "nome", label: "Aluno", render: (row) => row.nome as ReactNode },
+      { key: "turma", label: "Turma", render: (row) => row.turma as ReactNode },
+      { key: "turno", label: "Turno", render: (row) => row.turno as ReactNode },
+      {
+        key: "media",
+        label: "Média",
+        align: "right",
+        render: (row) => asNumber(row.media, 2),
       },
     ],
   },

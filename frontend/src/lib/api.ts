@@ -206,6 +206,13 @@ type RelatorioResponse = {
   dados: Array<Record<string, unknown>>;
 };
 
+export type RelatorioQueryArgs = {
+  slug: string;
+  turno?: string;
+  serie?: string;
+  turma?: string;
+};
+
 export type GraficoResponse<T = Record<string, unknown>> = {
   slug: string;
   dados: T[];
@@ -288,9 +295,10 @@ export const api = createApi({
       },
       invalidatesTags: ["Uploads", "Turmas", "Alunos", "Dashboard", "Notas"]
     }),
-    getRelatorio: builder.query<RelatorioResponse, string>({
-      query: (slug) => ({
-        url: `/relatorios/${slug}`
+    getRelatorio: builder.query<RelatorioResponse, RelatorioQueryArgs>({
+      query: ({ slug, ...params }) => ({
+        url: `/relatorios/${slug}`,
+        params: sanitizeParams(params)
       })
     }),
     getGrafico: builder.query<GraficoResponse, GraficoQueryArgs>({

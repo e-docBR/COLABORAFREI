@@ -110,3 +110,4 @@ colaboraFREI/
 - **Dashboard:** o gráfico "Situação geral" agora consome `/graficos/situacao-distribuicao`, exibe estados de carregamento/erro e legenda dinâmica.
 - **Métricas por disciplina:** `_disciplinas_medias` passou a somar notas e contabilizar entradas antes de normalizar para evitar distorções em disciplinas com rótulos unificados (ex.: LÍNGUA INGLESA).
 - **Shell autenticado:** o topo da aplicação ganhou menu de usuário com ações de troca de senha e logout, além de rótulos humanizados para papéis (Administrador, Coordenador, etc.).
+- **Relatório "Melhores alunos":** novo endpoint agrega top 10 alunos com filtros por turno/série/turma; o frontend ganhou seletor dinâmico derivado da lista de turmas.

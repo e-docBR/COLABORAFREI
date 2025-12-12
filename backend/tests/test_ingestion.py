@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from app.core.database import session_scope
-from app.models import Aluno, Nota
+from app.models import Aluno, Nota, Usuario
 from app.services.ingestion import (
     ParsedAlunoRecord,
     ParsedNotaRecord,
@@ -14,6 +14,9 @@ def _cleanup_matricula(matricula: str) -> None:
     with session_scope() as session:
         aluno = session.execute(select(Aluno).where(Aluno.matricula == matricula)).scalar_one_or_none()
         if aluno:
+            usuario = session.execute(select(Usuario).where(Usuario.aluno_id == aluno.id)).scalar_one_or_none()
+            if usuario:
+                session.delete(usuario)
             session.delete(aluno)
             session.commit()
 

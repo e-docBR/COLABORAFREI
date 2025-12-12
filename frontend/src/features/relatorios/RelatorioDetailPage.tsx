@@ -1,3 +1,4 @@
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import {
   Alert,
@@ -8,6 +9,7 @@ import {
   CardContent,
   CircularProgress,
   Link,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -15,19 +17,98 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography
 } from "@mui/material";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
-import { useGetRelatorioQuery } from "../../lib/api";
+import { useGetRelatorioQuery, useListTurmasQuery } from "../../lib/api";
 import { RELATORIOS_BY_SLUG, type RelatorioSlug } from "./config";
+
+const DEFAULT_FILTERS = { turno: "", serie: "", turma: "" } as const;
+
+const deriveSerieFromTurma = (turma?: string) => {
+  if (!turma) return "";
+  const parts = turma.trim().split(/\s+/);
+  if (parts.length <= 1) return turma.trim();
+  return parts.slice(0, -1).join(" ");
+};
 
 export const RelatorioDetailPage = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: RelatorioSlug }>();
   const definition = slug ? RELATORIOS_BY_SLUG[slug] : undefined;
-  const { data, isLoading, isError } = useGetRelatorioQuery(slug ?? "", {
-    skip: !slug || !definition
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
+  const enableAdvancedFilters = definition?.slug === "melhores-alunos";
+  const { data: turmasData } = useListTurmasQuery(undefined, {
+    skip: !enableAdvancedFilters
+  });
+
+  useEffect(() => {
+    setFilters({ ...DEFAULT_FILTERS });
+  }, [slug]);
+
+  const turmasList = useMemo(() => turmasData?.items ?? [], [turmasData]);
+
+  const turnoOptions = useMemo(() => {
+    if (!enableAdvancedFilters) return [];
+    const set = new Set<string>();
+    turmasList.forEach((item) => {
+      if (item.turno) {
+        set.add(item.turno);
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [enableAdvancedFilters, turmasList]);
+
+  const serieOptions = useMemo(() => {
+    if (!enableAdvancedFilters) return [];
+    const set = new Set<string>();
+    turmasList.forEach((item) => {
+      const serie = deriveSerieFromTurma(item.turma);
+      if (serie) {
+        set.add(serie);
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [enableAdvancedFilters, turmasList]);
+
+  const turmaOptions = useMemo(() => {
+    if (!enableAdvancedFilters) return [];
+    const filtered = turmasList.filter((item) => {
+      const matchesTurno = !filters.turno || item.turno === filters.turno;
+      const matchesSerie = !filters.serie || deriveSerieFromTurma(item.turma) === filters.serie;
+      return matchesTurno && matchesSerie;
+    });
+    const set = new Set(filtered.map((item) => item.turma));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [enableAdvancedFilters, filters.serie, filters.turno, turmasList]);
+
+  useEffect(() => {
+    if (!enableAdvancedFilters || !filters.turma) return;
+    if (!turmaOptions.includes(filters.turma)) {
+      setFilters((prev) => ({ ...prev, turma: "" }));
+    }
+  }, [enableAdvancedFilters, filters.turma, turmaOptions]);
+
+  const sanitizedFilters = useMemo(
+    () => ({
+      turno: filters.turno || undefined,
+      serie: filters.serie || undefined,
+      turma: filters.turma || undefined
+    }),
+    [filters]
+  );
+
+  const queryArgs = slug
+    ? {
+        slug,
+        ...sanitizedFilters
+      }
+    : undefined;
+
+  const { data, isLoading, isError, isFetching } = useGetRelatorioQuery(queryArgs ?? { slug: "" }, {
+    skip: !slug || !definition || !queryArgs
   });
 
   if (!definition) {
@@ -47,6 +128,16 @@ export const RelatorioDetailPage = () => {
   }
 
   const rows = Array.isArray(data.dados) ? data.dados : [];
+  const hasRows = rows.length > 0;
+
+  const handleFilterChange = (field: keyof typeof filters) => (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === "serie" ? { turma: "" } : {})
+    }));
+  };
 
   return (
     <Stack spacing={3}>
@@ -71,6 +162,58 @@ export const RelatorioDetailPage = () => {
         </CardContent>
       </Card>
 
+      {enableAdvancedFilters && (
+        <Card>
+          <CardContent>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-end" }}>
+              <TextField
+                select
+                label="Turno"
+                value={filters.turno}
+                onChange={handleFilterChange("turno")}
+                fullWidth
+              >
+                <MenuItem value="">Todos os turnos</MenuItem>
+                {turnoOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Série"
+                value={filters.serie}
+                onChange={handleFilterChange("serie")}
+                fullWidth
+              >
+                <MenuItem value="">Todas as séries</MenuItem>
+                {serieOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Turma"
+                value={filters.turma}
+                onChange={handleFilterChange("turma")}
+                disabled={turmaOptions.length === 0}
+                fullWidth
+              >
+                <MenuItem value="">Todas as turmas</MenuItem>
+                {turmaOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+
       <TableContainer component={Card}>
         <Table>
           <TableHead>
@@ -83,7 +226,7 @@ export const RelatorioDetailPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.length === 0 ? (
+            {!hasRows && !isFetching ? (
               <TableRow>
                 <TableCell colSpan={definition.columns.length} align="center">
                   <Typography color="text.secondary">Nenhum dado disponível.</Typography>
@@ -99,6 +242,13 @@ export const RelatorioDetailPage = () => {
                   ))}
                 </TableRow>
               ))
+            )}
+            {isFetching && (
+              <TableRow>
+                <TableCell colSpan={definition.columns.length} align="center">
+                  <CircularProgress size={24} />
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
