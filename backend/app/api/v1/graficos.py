@@ -11,6 +11,21 @@ from sqlalchemy.orm import Session
 from ...core.database import session_scope
 from ...models import Aluno, Nota
 
+DISCIPLINA_NORMALIZACAO = {
+    "ARTES": "ARTE",
+    "INGLES": "LÍNGUA INGLESA",
+    "INGLÊS": "LÍNGUA INGLESA",
+    "LÍNGUA PORTUGUÊSA": "LÍNGUA PORTUGUESA",
+    "LINGUA PORTUGUESA": "LÍNGUA PORTUGUESA",
+}
+
+
+def _normalize_disciplina(nome: str | None) -> str:
+    if not nome:
+        return "OUTROS"
+    chave = nome.strip().upper()
+    return DISCIPLINA_NORMALIZACAO.get(chave, nome.strip())
+
 GraphBuilder = Callable[[Session, str | None, str | None, str | None], list[dict[str, object]]]
 
 
@@ -152,14 +167,27 @@ def _heatmap_disciplinas(session, turno: str | None, turma: str | None, trimestr
         query = query.filter(Aluno.turma == turma)
     query = query.group_by(Aluno.turma, Nota.disciplina)
 
-    return [
-        {
-            "turma": turma_nome,
-            "disciplina": disciplina,
-            "media": round(float(media), 2) if media is not None else 0.0,
-        }
-        for turma_nome, disciplina, media in query.all()
-    ]
+    agregados: dict[tuple[str, str], dict[str, float]] = {}
+    for turma_nome, disciplina, media in query.all():
+        disciplina_normalizada = _normalize_disciplina(disciplina)
+        chave = (turma_nome, disciplina_normalizada)
+        bucket = agregados.setdefault(chave, {"soma": 0.0, "quantidade": 0})
+        bucket["soma"] += float(media or 0.0)
+        bucket["quantidade"] += 1
+
+    resultados = []
+    for (turma_nome, disciplina_normalizada), valores in agregados.items():
+        media_final = valores["soma"] / valores["quantidade"] if valores["quantidade"] else 0.0
+        resultados.append(
+            {
+                "turma": turma_nome,
+                "disciplina": disciplina_normalizada,
+                "media": round(media_final, 2),
+            }
+        )
+
+    resultados.sort(key=lambda item: (item["turma"], item["disciplina"]))
+    return resultados
 
 
 GRAPH_BUILDERS: dict[str, GraphBuilder] = {
