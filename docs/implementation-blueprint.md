@@ -111,3 +111,4 @@ colaboraFREI/
 - **Métricas por disciplina:** `_disciplinas_medias` passou a somar notas e contabilizar entradas antes de normalizar para evitar distorções em disciplinas com rótulos unificados (ex.: LÍNGUA INGLESA).
 - **Shell autenticado:** o topo da aplicação ganhou menu de usuário com ações de troca de senha e logout, além de rótulos humanizados para papéis (Administrador, Coordenador, etc.).
 - **Relatório "Melhores alunos":** novo endpoint agrega top 10 alunos com filtros por turno/série/turma; o frontend ganhou seletor dinâmico derivado da lista de turmas.
+- **Filtros combinados:** endpoint e UI agora aceitam disciplina como filtro adicional e validam inconsistências de turno/série/turma antes de buscar os dados.

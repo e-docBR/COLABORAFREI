@@ -22,10 +22,10 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
-import { useGetRelatorioQuery, useListTurmasQuery } from "../../lib/api";
+import { useGetNotasFiltrosQuery, useGetRelatorioQuery, useListTurmasQuery } from "../../lib/api";
 import { RELATORIOS_BY_SLUG, type RelatorioSlug } from "./config";
 
-const DEFAULT_FILTERS = { turno: "", serie: "", turma: "" } as const;
+const DEFAULT_FILTERS = { turno: "", serie: "", turma: "", disciplina: "" } as const;
 
 const deriveSerieFromTurma = (turma?: string) => {
   if (!turma) return "";
@@ -41,6 +41,9 @@ export const RelatorioDetailPage = () => {
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
   const enableAdvancedFilters = definition?.slug === "melhores-alunos";
   const { data: turmasData } = useListTurmasQuery(undefined, {
+    skip: !enableAdvancedFilters
+  });
+  const { data: notasFiltrosData } = useGetNotasFiltrosQuery(undefined, {
     skip: !enableAdvancedFilters
   });
 
@@ -91,11 +94,18 @@ export const RelatorioDetailPage = () => {
     }
   }, [enableAdvancedFilters, filters.turma, turmaOptions]);
 
+  const disciplinaOptions = useMemo(() => {
+    if (!enableAdvancedFilters) return [];
+    const disciplinas = notasFiltrosData?.disciplinas ?? [];
+    return [...disciplinas].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [enableAdvancedFilters, notasFiltrosData]);
+
   const sanitizedFilters = useMemo(
     () => ({
       turno: filters.turno || undefined,
       serie: filters.serie || undefined,
-      turma: filters.turma || undefined
+      turma: filters.turma || undefined,
+      disciplina: filters.disciplina || undefined
     }),
     [filters]
   );
@@ -130,13 +140,45 @@ export const RelatorioDetailPage = () => {
   const rows = Array.isArray(data.dados) ? data.dados : [];
   const hasRows = rows.length > 0;
 
+  const combinationIssues = useMemo(() => {
+    if (!enableAdvancedFilters) return [];
+    const issues: string[] = [];
+    if (filters.turma) {
+      if (filters.serie && !filters.turma.toUpperCase().startsWith(filters.serie.toUpperCase())) {
+        issues.push("A turma selecionada não pertence à série escolhida.");
+      }
+      const matchingTurmas = turmasList.filter((item) => item.turma === filters.turma);
+      if (filters.turno && matchingTurmas.length && !matchingTurmas.some((item) => item.turno === filters.turno)) {
+        issues.push("A turma selecionada não está disponível no turno informado.");
+      }
+    }
+    return issues;
+  }, [enableAdvancedFilters, filters.serie, filters.turma, filters.turno, turmasList]);
+
   const handleFilterChange = (field: keyof typeof filters) => (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-      ...(field === "serie" ? { turma: "" } : {})
-    }));
+    setFilters((prev) => {
+      let next = {
+        ...prev,
+        [field]: value,
+        ...(field === "serie" ? { turma: "" } : {})
+      };
+      if (field === "turma") {
+        if (!value) {
+          next = { ...next, turma: "" };
+        } else {
+          const derivedSerie = deriveSerieFromTurma(value);
+          const match = turmasList.find((item) => item.turma === value);
+          next = {
+            ...next,
+            turma: value,
+            serie: derivedSerie || next.serie,
+            turno: match?.turno ?? next.turno
+          };
+        }
+      }
+      return next;
+    });
   };
 
   return (
@@ -209,7 +251,29 @@ export const RelatorioDetailPage = () => {
                   </MenuItem>
                 ))}
               </TextField>
+              <TextField
+                select
+                label="Disciplina"
+                value={filters.disciplina}
+                onChange={handleFilterChange("disciplina")}
+                disabled={disciplinaOptions.length === 0}
+                fullWidth
+              >
+                <MenuItem value="">Todas as disciplinas</MenuItem>
+                {disciplinaOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Stack>
+            {combinationIssues.length > 0 && (
+              <Box mt={2}>
+                <Alert severity="warning" sx={{ mb: 0 }}>
+                  {combinationIssues[0]}
+                </Alert>
+              </Box>
+            )}
           </CardContent>
         </Card>
       )}

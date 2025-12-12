@@ -7,7 +7,13 @@ from ...core.database import session_scope
 from ...models import Aluno, Nota
 
 
-def _apply_aluno_filters(query, turno: str | None, serie: str | None, turma: str | None):
+def _apply_aluno_filters(
+    query,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    disciplina: str | None,
+):
     if turno:
         query = query.filter(func.upper(Aluno.turno) == turno.strip().upper())
     if turma:
@@ -16,12 +22,20 @@ def _apply_aluno_filters(query, turno: str | None, serie: str | None, turma: str
         serie_limpa = serie.strip()
         if serie_limpa:
             query = query.filter(Aluno.turma.ilike(f"{serie_limpa}%"))
+    if disciplina:
+        query = query.filter(func.upper(Nota.disciplina) == disciplina.strip().upper())
     return query
 
 
-def build_turmas_mais_faltas(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+def build_turmas_mais_faltas(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
     query = session.query(Aluno.turma, func.sum(Nota.faltas).label("faltas")).join(Nota)
-    query = _apply_aluno_filters(query, turno, serie, turma)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
     query = query.group_by(Aluno.turma).order_by(func.sum(Nota.faltas).desc()).limit(10)
     return [
         {"turma": turma, "faltas": int(faltas or 0)}
@@ -29,9 +43,15 @@ def build_turmas_mais_faltas(session, turno: str | None = None, serie: str | Non
     ]
 
 
-def build_melhores_medias(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+def build_melhores_medias(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
     query = session.query(Aluno.turma, Aluno.turno, func.avg(Nota.total).label("media")).join(Nota)
-    query = _apply_aluno_filters(query, turno, serie, turma)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
     query = query.group_by(Aluno.turma, Aluno.turno).order_by(func.avg(Nota.total).desc()).limit(10)
     return [
         {
@@ -43,9 +63,15 @@ def build_melhores_medias(session, turno: str | None = None, serie: str | None =
     ]
 
 
-def build_alunos_em_risco(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+def build_alunos_em_risco(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
     subquery = session.query(Aluno.nome, Aluno.turma, func.avg(Nota.total).label("media")).join(Nota)
-    subquery = _apply_aluno_filters(subquery, turno, serie, turma)
+    subquery = _apply_aluno_filters(subquery, turno, serie, turma, disciplina)
     subquery = (
         subquery.group_by(Aluno.id)
         .having(func.avg(Nota.total) < 15)
@@ -63,6 +89,7 @@ def build_disciplinas_notas_baixas(
     turno: str | None = None,
     serie: str | None = None,
     turma: str | None = None,
+    disciplina: str | None = None,
 ):
     # Mapeamento de disciplinas para normalização
     normalizacao = {
@@ -74,7 +101,7 @@ def build_disciplinas_notas_baixas(
     }
     
     query = session.query(Nota.disciplina, func.avg(Nota.total).label("media")).join(Aluno)
-    query = _apply_aluno_filters(query, turno, serie, turma)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
     query = query.group_by(Nota.disciplina).order_by(func.avg(Nota.total))
     
     # Agrupa por disciplina normalizada
@@ -96,14 +123,20 @@ def build_disciplinas_notas_baixas(
     return result
 
 
-def build_melhores_alunos(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+def build_melhores_alunos(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
     query = session.query(
         Aluno.nome,
         Aluno.turma,
         Aluno.turno,
         func.avg(Nota.total).label("media"),
     ).join(Nota)
-    query = _apply_aluno_filters(query, turno, serie, turma)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
     query = (
         query.group_by(Aluno.id, Aluno.nome, Aluno.turma, Aluno.turno)
         .order_by(func.avg(Nota.total).desc())
@@ -144,9 +177,13 @@ def register(parent: Blueprint) -> None:
         turno = request.args.get("turno") or None
         serie = request.args.get("serie") or None
         turma = request.args.get("turma") or None
+        disciplina = request.args.get("disciplina") or None
+
+        if serie and turma and not turma.strip().upper().startswith(serie.strip().upper()):
+            return jsonify({"error": "A turma selecionada não pertence à série indicada."}), 400
 
         with session_scope() as session:
-            data = builder(session, turno=turno, serie=serie, turma=turma)
+            data = builder(session, turno=turno, serie=serie, turma=turma, disciplina=disciplina)
         return jsonify({"relatorio": slug, "dados": data})
 
     parent.register_blueprint(bp)

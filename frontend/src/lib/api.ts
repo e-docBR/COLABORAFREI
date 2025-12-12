@@ -211,6 +211,7 @@ export type RelatorioQueryArgs = {
   turno?: string;
   serie?: string;
   turma?: string;
+  disciplina?: string;
 };
 
 export type GraficoResponse<T = Record<string, unknown>> = {
