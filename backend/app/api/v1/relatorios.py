@@ -20,14 +20,9 @@ def _apply_aluno_filters(query, turno: str | None, serie: str | None, turma: str
 
 
 def build_turmas_mais_faltas(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
-    query = (
-        session.query(Aluno.turma, func.sum(Nota.faltas).label("faltas"))
-        .join(Nota)
-        .group_by(Aluno.turma)
-        .order_by(func.sum(Nota.faltas).desc())
-        .limit(10)
-    )
+    query = session.query(Aluno.turma, func.sum(Nota.faltas).label("faltas")).join(Nota)
     query = _apply_aluno_filters(query, turno, serie, turma)
+    query = query.group_by(Aluno.turma).order_by(func.sum(Nota.faltas).desc()).limit(10)
     return [
         {"turma": turma, "faltas": int(faltas or 0)}
         for turma, faltas in query.all()
@@ -35,14 +30,9 @@ def build_turmas_mais_faltas(session, turno: str | None = None, serie: str | Non
 
 
 def build_melhores_medias(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
-    query = (
-        session.query(Aluno.turma, Aluno.turno, func.avg(Nota.total).label("media"))
-        .join(Nota)
-        .group_by(Aluno.turma, Aluno.turno)
-        .order_by(func.avg(Nota.total).desc())
-        .limit(10)
-    )
+    query = session.query(Aluno.turma, Aluno.turno, func.avg(Nota.total).label("media")).join(Nota)
     query = _apply_aluno_filters(query, turno, serie, turma)
+    query = query.group_by(Aluno.turma, Aluno.turno).order_by(func.avg(Nota.total).desc()).limit(10)
     return [
         {
             "turma": turma,
@@ -54,19 +44,14 @@ def build_melhores_medias(session, turno: str | None = None, serie: str | None =
 
 
 def build_alunos_em_risco(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+    subquery = session.query(Aluno.nome, Aluno.turma, func.avg(Nota.total).label("media")).join(Nota)
+    subquery = _apply_aluno_filters(subquery, turno, serie, turma)
     subquery = (
-        session.query(
-            Aluno.nome,
-            Aluno.turma,
-            func.avg(Nota.total).label("media"),
-        )
-        .join(Nota)
-        .group_by(Aluno.id)
+        subquery.group_by(Aluno.id)
         .having(func.avg(Nota.total) < 15)
         .order_by(func.avg(Nota.total))
         .limit(10)
     )
-    subquery = _apply_aluno_filters(subquery, turno, serie, turma)
     return [
         {"nome": nome, "turma": turma, "media": round(float(media), 2)}
         for nome, turma, media in subquery.all()
@@ -88,13 +73,9 @@ def build_disciplinas_notas_baixas(
         "LINGUA PORTUGUESA": "LÍNGUA PORTUGUESA",
     }
     
-    query = (
-        session.query(Nota.disciplina, func.avg(Nota.total).label("media"))
-        .join(Aluno)
-        .group_by(Nota.disciplina)
-        .order_by(func.avg(Nota.total))
-    )
+    query = session.query(Nota.disciplina, func.avg(Nota.total).label("media")).join(Aluno)
     query = _apply_aluno_filters(query, turno, serie, turma)
+    query = query.group_by(Nota.disciplina).order_by(func.avg(Nota.total))
     
     # Agrupa por disciplina normalizada
     disciplinas_map = {}
@@ -116,19 +97,18 @@ def build_disciplinas_notas_baixas(
 
 
 def build_melhores_alunos(session, turno: str | None = None, serie: str | None = None, turma: str | None = None):
+    query = session.query(
+        Aluno.nome,
+        Aluno.turma,
+        Aluno.turno,
+        func.avg(Nota.total).label("media"),
+    ).join(Nota)
+    query = _apply_aluno_filters(query, turno, serie, turma)
     query = (
-        session.query(
-            Aluno.nome,
-            Aluno.turma,
-            Aluno.turno,
-            func.avg(Nota.total).label("media"),
-        )
-        .join(Nota)
-        .group_by(Aluno.id, Aluno.nome, Aluno.turma, Aluno.turno)
+        query.group_by(Aluno.id, Aluno.nome, Aluno.turma, Aluno.turno)
         .order_by(func.avg(Nota.total).desc())
         .limit(10)
     )
-    query = _apply_aluno_filters(query, turno, serie, turma)
     return [
         {
             "nome": nome,

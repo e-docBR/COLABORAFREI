@@ -12,13 +12,16 @@ from app.services.ingestion import (
 
 def _cleanup_matricula(matricula: str) -> None:
     with session_scope() as session:
+        usuario = session.execute(select(Usuario).where(Usuario.username == "fulanotest-ingest")).scalar_one_or_none()
+        if usuario:
+            session.delete(usuario)
         aluno = session.execute(select(Aluno).where(Aluno.matricula == matricula)).scalar_one_or_none()
         if aluno:
             usuario = session.execute(select(Usuario).where(Usuario.aluno_id == aluno.id)).scalar_one_or_none()
             if usuario:
                 session.delete(usuario)
             session.delete(aluno)
-            session.commit()
+        session.commit()
 
 
 def test_apply_records_creates_and_updates_aluno_notas():
