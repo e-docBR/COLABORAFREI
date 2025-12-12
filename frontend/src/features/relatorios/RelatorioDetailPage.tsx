@@ -40,11 +40,12 @@ export const RelatorioDetailPage = () => {
   const definition = slug ? RELATORIOS_BY_SLUG[slug] : undefined;
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
   const enableAdvancedFilters = definition?.slug === "melhores-alunos";
+  const shouldFetchFilters = Boolean(enableAdvancedFilters);
   const { data: turmasData } = useListTurmasQuery(undefined, {
-    skip: !enableAdvancedFilters
+    skip: !shouldFetchFilters
   });
   const { data: notasFiltrosData } = useGetNotasFiltrosQuery(undefined, {
-    skip: !enableAdvancedFilters
+    skip: !shouldFetchFilters
   });
 
   useEffect(() => {
@@ -121,23 +122,7 @@ export const RelatorioDetailPage = () => {
     skip: !slug || !definition || !queryArgs
   });
 
-  if (!definition) {
-    return <Alert severity="warning">Relatório não encontrado.</Alert>;
-  }
-
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError || !data) {
-    return <Alert severity="error">Não foi possível carregar os dados deste relatório.</Alert>;
-  }
-
-  const rows = Array.isArray(data.dados) ? data.dados : [];
+  const rows = Array.isArray(data?.dados) ? data!.dados : [];
   const hasRows = rows.length > 0;
 
   const combinationIssues = useMemo(() => {
@@ -154,6 +139,22 @@ export const RelatorioDetailPage = () => {
     }
     return issues;
   }, [enableAdvancedFilters, filters.serie, filters.turma, filters.turno, turmasList]);
+
+  if (!definition) {
+    return <Alert severity="warning">Relatório não encontrado.</Alert>;
+  }
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError || !data) {
+    return <Alert severity="error">Não foi possível carregar os dados deste relatório.</Alert>;
+  }
 
   const handleFilterChange = (field: keyof typeof filters) => (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
