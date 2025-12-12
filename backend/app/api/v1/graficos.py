@@ -85,26 +85,39 @@ def _turmas_trimestre(session, turno: str | None, turma: str | None, _trimestre:
 
 
 def _situacao_distribuicao(session, turno: str | None, turma: str | None, _trimestre: str | None):
-    query = session.query(Nota.situacao, func.count(Nota.id))
-    query = query.join(Aluno)
+    # Conta alunos únicos por situação (não registros de notas)
+    # Agrupa situações de cada aluno e considera a melhor situação
+    
+    # Busca todas as notas com filtros aplicados
+    query = session.query(Nota.aluno_id, Nota.situacao)
+    query = query.join(Aluno, Nota.aluno_id == Aluno.id)
+    
     if turno:
         query = query.filter(Aluno.turno == turno)
     if turma:
         query = query.filter(Aluno.turma == turma)
-    query = query.group_by(Nota.situacao)
-
-    mapped = {
-        "APR": "Aprovado",
-        "APROVADO": "Aprovado",
-        "REC": "Recuperação",
-        "REPROVADO": "Recuperação",
-    }
-
-    data = {}
-    for situacao, total in query.all():
-        label = mapped.get((situacao or "").upper(), "Outros")
-        data[label] = data.get(label, 0) + int(total or 0)
-
+    
+    # Agrupa por aluno e determina melhor situação
+    aluno_situacoes: dict[int, str] = {}
+    for aluno_id, situacao in query.all():
+        situacao_upper = (situacao or "").upper()
+        
+        # Prioridade: APR/APROVADO > REC/REP/REPROVADO > Outros
+        situacao_atual = aluno_situacoes.get(aluno_id, "")
+        situacao_atual_upper = situacao_atual.upper()
+        
+        if situacao_upper in ["APR", "APROVADO"]:
+            aluno_situacoes[aluno_id] = "Aprovado"
+        elif situacao_upper in ["REC", "REP", "REPROVADO"] and situacao_atual_upper not in ["APR", "APROVADO"]:
+            aluno_situacoes[aluno_id] = "Recuperação"
+        elif not situacao_atual:
+            aluno_situacoes[aluno_id] = "Outros"
+    
+    # Conta por categoria
+    data: dict[str, int] = {}
+    for situacao in aluno_situacoes.values():
+        data[situacao] = data.get(situacao, 0) + 1
+    
     return [
         {"situacao": label, "total": quantidade}
         for label, quantidade in data.items()
