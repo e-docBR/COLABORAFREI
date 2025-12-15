@@ -72,7 +72,10 @@ export const GraficosPage = () => {
   }, [turmasData]);
 
   const { data: notasFiltrosData } = useGetNotasFiltrosQuery();
-  const disciplinaOptions = useMemo(() => (notasFiltrosData?.disciplinas ?? []).sort(), [notasFiltrosData]);
+  const disciplinaOptions = useMemo(() => {
+    const list = notasFiltrosData?.disciplinas ?? [];
+    return [...list].sort();
+  }, [notasFiltrosData]);
 
   const queryArgs = useMemo<GraficoQueryArgs>(() => {
     const params: GraficoQueryArgs = { slug: chartSlug };
