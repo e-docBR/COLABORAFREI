@@ -3,7 +3,7 @@ from math import ceil
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from ...core.database import session_scope
 from ...models import Aluno, Nota
@@ -54,7 +54,13 @@ def register(parent: Blueprint) -> None:
                 query = query.filter(Aluno.turma == turma)
             if query_text:
                 like_term = f"%{query_text}%"
-                query = query.filter(Aluno.nome.ilike(like_term))
+                query = query.filter(
+                    or_(
+                        Aluno.nome.ilike(like_term),
+                        Aluno.matricula.ilike(like_term),
+                        Aluno.turma.ilike(like_term),
+                    )
+                )
             return query
 
         with session_scope() as session:

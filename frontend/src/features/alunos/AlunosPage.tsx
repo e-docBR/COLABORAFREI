@@ -16,7 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
-import { useListAlunosQuery } from "../../lib/api";
+import { useListAlunosQuery, useListTurmasQuery } from "../../lib/api";
 
 const getInitials = (name: string) =>
   name
@@ -37,6 +37,24 @@ export const AlunosPage = () => {
   const [search, setSearch] = useState("");
   const [turno, setTurno] = useState("");
   const [turma, setTurma] = useState("");
+
+  const {
+    data: turmasData,
+    isFetching: isFetchingTurmas
+  } = useListTurmasQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true
+  });
+
+  const turnoOptions = useMemo(() => {
+    const items = turmasData?.items ?? [];
+    return Array.from(new Set(items.map((item) => item.turno))).sort();
+  }, [turmasData]);
+
+  const turmaOptions = useMemo(() => {
+    const items = turmasData?.items ?? [];
+    return Array.from(new Set(items.map((item) => item.turma))).sort();
+  }, [turmasData]);
 
   const filters = useMemo(
     () => ({
@@ -67,9 +85,11 @@ export const AlunosPage = () => {
           onChange={(event) => setTurno(event.target.value)}
         >
           <option value="">Todos</option>
-          <option value="Matutino">Matutino</option>
-          <option value="Vespertino">Vespertino</option>
-          <option value="Noturno">Noturno</option>
+          {turnoOptions.map((value) => (
+            <option key={value} value={value} disabled={isFetchingTurmas && !turnoOptions.length}>
+              {value}
+            </option>
+          ))}
         </TextField>
         <TextField
           label="Turma"
@@ -79,9 +99,11 @@ export const AlunosPage = () => {
           onChange={(event) => setTurma(event.target.value)}
         >
           <option value="">Todas</option>
-          <option value="6º A">6º A</option>
-          <option value="7º B">7º B</option>
-          <option value="8º C">8º C</option>
+          {turmaOptions.map((value) => (
+            <option key={value} value={value} disabled={isFetchingTurmas && !turmaOptions.length}>
+              {value}
+            </option>
+          ))}
         </TextField>
         <Button variant="contained" color="primary">
           Novo Aluno
@@ -112,7 +134,11 @@ export const AlunosPage = () => {
               {alunos.map((aluno) => (
                 <Grid key={aluno.id} size={{ xs: 12, md: 6, lg: 3 }}>
                   <Card variant="outlined" sx={{ borderRadius: 4, height: "100%" }}>
-                    <CardActionArea component={RouterLink} to={`/alunos/${aluno.id}`} sx={{ height: "100%" }}>
+                    <CardActionArea
+                      component={RouterLink}
+                      to={`/app/alunos/${aluno.id}`}
+                      sx={{ height: "100%" }}
+                    >
                       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                         <Stack direction="row" alignItems="center" gap={1.5}>
                           <Avatar>{getInitials(aluno.nome)}</Avatar>
