@@ -135,13 +135,16 @@ export const DashboardPage = () => {
                       <Typography color="text.secondary">Sem dados para o período selecionado.</Typography>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 8, right: 80, bottom: 8, left: 8 }}>
+                        <PieChart margin={{ top: 8, right: 140, bottom: 8, left: 8 }}>
                           <Pie
                             data={situacaoChartData}
                             dataKey="value"
                             nameKey="name"
                             innerRadius={60}
                             outerRadius={90}
+                            paddingAngle={2}
+                            cx="38%"
+                            cy="50%"
                             labelLine={false}
                           >
                             {situacaoChartData.map((entry, index) => (
@@ -149,7 +152,12 @@ export const DashboardPage = () => {
                             ))}
                           </Pie>
                           <Tooltip formatter={(value) => `${value} alunos`} />
-                          <Legend layout="vertical" align="right" verticalAlign="middle" />
+                          <Legend
+                            layout="vertical"
+                            align="right"
+                            verticalAlign="middle"
+                            wrapperStyle={{ paddingLeft: 8 }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     )}
