@@ -123,43 +123,44 @@ export const DashboardPage = () => {
               <Typography variant="h6" mb={2}>
                 Situação geral
               </Typography>
-              <Box height={280}>
+                  <Box height={320} display="flex" alignItems="center" justifyContent="center">
                 {isSituacaoError && (
                   <Alert severity="error">Não foi possível carregar a distribuição das situações.</Alert>
                 )}
                 {!isSituacaoError && (
-                  <Box height="100%" display="flex" alignItems="center" justifyContent="center">
+                      <Box height="100%" width="100%" display="flex" alignItems="center" justifyContent="center">
                     {isSituacaoLoading ? (
                       <Skeleton variant="circular" width={200} height={200} />
                     ) : isSituacaoEmpty ? (
                       <Typography color="text.secondary">Sem dados para o período selecionado.</Typography>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 8, right: 140, bottom: 8, left: 8 }}>
-                          <Pie
-                            data={situacaoChartData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={2}
-                            cx="38%"
-                            cy="50%"
-                            labelLine={false}
-                          >
-                            {situacaoChartData.map((entry, index) => (
-                              <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} alunos`} />
-                          <Legend
-                            layout="vertical"
-                            align="right"
-                            verticalAlign="middle"
-                            wrapperStyle={{ paddingLeft: 8 }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                              <PieChart margin={{ top: 16, right: 16, bottom: 32, left: 16 }}>
+                                <Pie
+                                  data={situacaoChartData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  innerRadius={70}
+                                  outerRadius={105}
+                                  paddingAngle={2}
+                                  cx="45%"
+                                  cy="45%"
+                                  labelLine={false}
+                                >
+                                  {situacaoChartData.map((entry, index) => (
+                                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => `${value} alunos`} />
+                                <Legend
+                                  layout="horizontal"
+                                  verticalAlign="bottom"
+                                  align="center"
+                                  iconSize={10}
+                                  wrapperStyle={{ marginTop: 8 }}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
                     )}
                   </Box>
                 )}
