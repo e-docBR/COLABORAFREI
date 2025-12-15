@@ -36,7 +36,12 @@ import {
   Cell
 } from "recharts";
 
-import { useGetGraficoQuery, useListTurmasQuery, type GraficoQueryArgs } from "../../lib/api";
+import {
+  useGetGraficoQuery,
+  useGetNotasFiltrosQuery,
+  useListTurmasQuery,
+  type GraficoQueryArgs
+} from "../../lib/api";
 import { CHARTS, CHARTS_BY_SLUG, type ChartSlug, TRIMESTRES, TURNOS } from "./config";
 
 const BAR_COLOR = "#6E44FF";
@@ -45,20 +50,39 @@ const PIE_COLORS = ["#6E44FF", "#F06EFF", "#4CC9F0", "#FFD166"];
 export const GraficosPage = () => {
   const [chartSlug, setChartSlug] = useState<ChartSlug>("disciplinas-medias");
   const [turno, setTurno] = useState("");
+  const [serie, setSerie] = useState("");
   const [turma, setTurma] = useState("");
   const [trimestre, setTrimestre] = useState("3");
+  const [disciplina, setDisciplina] = useState("");
   const chart = CHARTS_BY_SLUG[chartSlug];
 
   const { data: turmasData } = useListTurmasQuery();
   const turmaOptions = useMemo(() => turmasData?.items ?? [], [turmasData]);
+  const serieOptions = useMemo(() => {
+    const items = turmasData?.items ?? [];
+    const series = new Set<string>();
+    items.forEach((item) => {
+      const parts = (item.turma ?? "").split(" ");
+      const prefix = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : item.turma;
+      if (prefix) {
+        series.add(prefix);
+      }
+    });
+    return Array.from(series).sort();
+  }, [turmasData]);
+
+  const { data: notasFiltrosData } = useGetNotasFiltrosQuery();
+  const disciplinaOptions = useMemo(() => (notasFiltrosData?.disciplinas ?? []).sort(), [notasFiltrosData]);
 
   const queryArgs = useMemo<GraficoQueryArgs>(() => {
     const params: GraficoQueryArgs = { slug: chartSlug };
     if (chart.supportsTurno && turno) params.turno = turno;
+    if (chart.supportsSerie && serie) params.serie = serie;
     if (chart.supportsTurma && turma) params.turma = turma;
     if (chart.supportsTrimestre && trimestre) params.trimestre = trimestre;
+    if (chart.supportsDisciplina && disciplina) params.disciplina = disciplina;
     return params;
-  }, [chartSlug, chart, turno, turma, trimestre]);
+  }, [chartSlug, chart, turno, serie, turma, trimestre, disciplina]);
 
   const { data, isLoading, isFetching, isError } = useGetGraficoQuery(queryArgs);
   const rawData = useMemo(() => {
@@ -91,8 +115,10 @@ export const GraficosPage = () => {
 
   const handleReset = () => {
     setTurno("");
+    setSerie("");
     setTurma("");
     setTrimestre("3");
+    setDisciplina("");
   };
 
   const renderChart = () => {
@@ -210,6 +236,25 @@ export const GraficosPage = () => {
           </FormControl>
         )}
 
+        {chart.supportsSerie && (
+          <FormControl sx={{ minWidth: 160 }}>
+            <InputLabel id="serie-label">Série</InputLabel>
+            <Select
+              labelId="serie-label"
+              label="Série"
+              value={serie}
+              onChange={(event) => setSerie(event.target.value)}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {serieOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
         {chart.supportsTurma && (
           <FormControl sx={{ minWidth: 180 }}>
             <InputLabel id="turma-label">Turma</InputLabel>
@@ -223,6 +268,25 @@ export const GraficosPage = () => {
               {turmaOptions.map((option) => (
                 <MenuItem key={option.turma} value={option.turma}>
                   {option.turma}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        {chart.supportsDisciplina && (
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="disciplina-label">Disciplina</InputLabel>
+            <Select
+              labelId="disciplina-label"
+              label="Disciplina"
+              value={disciplina}
+              onChange={(event) => setDisciplina(event.target.value)}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {disciplinaOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
                 </MenuItem>
               ))}
             </Select>
@@ -247,7 +311,7 @@ export const GraficosPage = () => {
           </FormControl>
         )}
 
-        <Button onClick={handleReset} disabled={!turno && !turma && trimestre === "3"}>
+        <Button onClick={handleReset} disabled={!turno && !serie && !turma && !disciplina && trimestre === "3"}>
           Limpar filtros
         </Button>
       </Stack>

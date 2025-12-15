@@ -26,7 +26,10 @@ def _normalize_disciplina(nome: str | None) -> str:
     chave = nome.strip().upper()
     return DISCIPLINA_NORMALIZACAO.get(chave, nome.strip())
 
-GraphBuilder = Callable[[Session, str | None, str | None, str | None], list[dict[str, object]]]
+GraphBuilder = Callable[
+    [Session, str | None, str | None, str | None, str | None, str | None],
+    list[dict[str, object]],
+]
 
 
 def register(parent: Blueprint) -> None:
@@ -42,11 +45,13 @@ def register(parent: Blueprint) -> None:
             return jsonify({"error": "Gráfico não encontrado"}), 404
 
         turno = request.args.get("turno") or None
+        serie = request.args.get("serie") or None
         turma = request.args.get("turma") or None
         trimestre = request.args.get("trimestre") or None
+        disciplina = request.args.get("disciplina") or None
 
         with session_scope() as session:
-            data = builder(session, turno, turma, trimestre)
+            data = builder(session, turno, serie, turma, trimestre, disciplina)
 
         return jsonify({"slug": slug, "dados": data})
 
@@ -66,7 +71,26 @@ def _resolve_trimestre_column(trimestre: str | None):
     return Nota.total
 
 
-def _disciplinas_medias(session, turno: str | None, turma: str | None, trimestre: str | None):
+def _apply_common_filters(query, turno: str | None, serie: str | None, turma: str | None, disciplina: str | None):
+    if turno:
+        query = query.filter(Aluno.turno == turno)
+    if serie:
+        query = query.filter(Aluno.turma.ilike(f"{serie}%"))
+    if turma:
+        query = query.filter(Aluno.turma == turma)
+    if disciplina:
+        query = query.filter(Nota.disciplina.ilike(f"%{disciplina}%"))
+    return query
+
+
+def _disciplinas_medias(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    trimestre: str | None,
+    disciplina: str | None,
+):
     column = _resolve_trimestre_column(trimestre)
     query = session.query(
         Nota.disciplina,
@@ -74,10 +98,7 @@ def _disciplinas_medias(session, turno: str | None, turma: str | None, trimestre
         func.count(column).label("quantidade"),
     )
     query = query.join(Aluno)
-    if turno:
-        query = query.filter(Aluno.turno == turno)
-    if turma:
-        query = query.filter(Aluno.turma == turma)
+    query = _apply_common_filters(query, turno, serie, turma, disciplina)
     query = query.group_by(Nota.disciplina)
 
     agregados: dict[str, dict[str, float]] = {}
@@ -96,32 +117,39 @@ def _disciplinas_medias(session, turno: str | None, turma: str | None, trimestre
     return resultados
 
 
-def _turmas_trimestre(session, turno: str | None, turma: str | None, _trimestre: str | None):
+def _turmas_trimestre(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    _trimestre: str | None,
+    disciplina: str | None,
+):
     results: list[dict[str, object]] = []
     for trimestre, column in TRIMESTRE_COLUMNS.items():
         query = session.query(func.avg(column))
         query = query.join(Aluno)
-        if turno:
-            query = query.filter(Aluno.turno == turno)
-        if turma:
-            query = query.filter(Aluno.turma == turma)
+        query = _apply_common_filters(query, turno, serie, turma, disciplina)
         media = query.scalar()
         results.append({"trimestre": f"{trimestre}º", "media": round(float(media), 2) if media else 0.0})
     return results
 
 
-def _situacao_distribuicao(session, turno: str | None, turma: str | None, _trimestre: str | None):
+def _situacao_distribuicao(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    _trimestre: str | None,
+    _disciplina: str | None,
+):
     # Conta alunos únicos por situação (não registros de notas)
     # Agrupa situações de cada aluno e considera a melhor situação
     
     # Busca todas as notas com filtros aplicados
     query = session.query(Nota.aluno_id, Nota.situacao)
     query = query.join(Aluno, Nota.aluno_id == Aluno.id)
-    
-    if turno:
-        query = query.filter(Aluno.turno == turno)
-    if turma:
-        query = query.filter(Aluno.turma == turma)
+    query = _apply_common_filters(query, turno, serie, turma, None)
     
     # Agrupa por aluno e determina melhor situação
     aluno_situacoes: dict[int, str] = {}
@@ -150,17 +178,21 @@ def _situacao_distribuicao(session, turno: str | None, turma: str | None, _trime
     ]
 
 
-def _faltas_por_turma(session, turno: str | None, turma: str | None, _trimestre: str | None):
+def _faltas_por_turma(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    _trimestre: str | None,
+    _disciplina: str | None,
+):
     query = (
         session.query(Aluno.turma, func.sum(Nota.faltas).label("faltas"))
         .join(Nota)
         .group_by(Aluno.turma)
         .order_by(func.sum(Nota.faltas).desc())
     )
-    if turno:
-        query = query.filter(Aluno.turno == turno)
-    if turma:
-        query = query.filter(Aluno.turma == turma)
+    query = _apply_common_filters(query, turno, serie, turma, None)
     results = query.limit(10).all()
     return [
         {"turma": turma_nome, "faltas": int(faltas or 0)}
@@ -168,14 +200,18 @@ def _faltas_por_turma(session, turno: str | None, turma: str | None, _trimestre:
     ]
 
 
-def _heatmap_disciplinas(session, turno: str | None, turma: str | None, trimestre: str | None):
+def _heatmap_disciplinas(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    trimestre: str | None,
+    disciplina: str | None,
+):
     column = _resolve_trimestre_column(trimestre)
     query = session.query(Aluno.turma, Nota.disciplina, func.avg(column).label("media"))
     query = query.join(Aluno)
-    if turno:
-        query = query.filter(Aluno.turno == turno)
-    if turma:
-        query = query.filter(Aluno.turma == turma)
+    query = _apply_common_filters(query, turno, serie, turma, disciplina)
     query = query.group_by(Aluno.turma, Nota.disciplina)
 
     agregados: dict[tuple[str, str], dict[str, float]] = {}
@@ -201,10 +237,34 @@ def _heatmap_disciplinas(session, turno: str | None, turma: str | None, trimestr
     return resultados
 
 
+def _medias_por_trimestre(
+    session,
+    turno: str | None,
+    serie: str | None,
+    turma: str | None,
+    _trimestre: str | None,
+    disciplina: str | None,
+):
+    resultados: list[dict[str, object]] = []
+    for trimestre_label, column in TRIMESTRE_COLUMNS.items():
+        query = session.query(func.avg(column))
+        query = query.join(Aluno)
+        query = _apply_common_filters(query, turno, serie, turma, disciplina)
+        media = query.scalar()
+        resultados.append(
+            {
+                "trimestre": f"{trimestre_label}º",
+                "media": round(float(media), 2) if media else 0.0,
+            }
+        )
+    return resultados
+
+
 GRAPH_BUILDERS: dict[str, GraphBuilder] = {
     "disciplinas-medias": _disciplinas_medias,
     "turmas-trimestre": _turmas_trimestre,
     "situacao-distribuicao": _situacao_distribuicao,
     "faltas-por-turma": _faltas_por_turma,
     "heatmap-disciplinas": _heatmap_disciplinas,
+    "medias-por-trimestre": _medias_por_trimestre,
 }

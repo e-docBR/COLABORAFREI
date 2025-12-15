@@ -222,8 +222,10 @@ export type GraficoResponse<T = Record<string, unknown>> = {
 export type GraficoQueryArgs = {
   slug: string;
   turno?: string;
+  serie?: string;
   turma?: string;
   trimestre?: string;
+  disciplina?: string;
 };
 
 const sanitizeParams = (params?: Record<string, unknown>) =>

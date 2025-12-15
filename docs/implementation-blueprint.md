@@ -117,3 +117,4 @@ colaboraFREI/
 ## 9. Atualizações — 15/12/2025
 - **Busca de alunos:** `GET /alunos` agora aceita `q` sobre nome, matrícula ou turma (OR) para alinhar com o campo "Nome ou matrícula" na UI.
 - **Filtros dinâmicos na UI:** a página `/app/alunos` consome `listTurmas` para preencher turnos e turmas reais, evitando listas fixas e garantindo filtros válidos.
+- **Gráficos comparativos:** novo slug `medias-por-trimestre` traz a evolução das médias por trimestre com filtros por turno, série, turma e disciplina; UI ganhou o gráfico correspondente.

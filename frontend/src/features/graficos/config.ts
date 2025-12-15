@@ -3,7 +3,8 @@ export type ChartSlug =
   | "turmas-trimestre"
   | "situacao-distribuicao"
   | "faltas-por-turma"
-  | "heatmap-disciplinas";
+  | "heatmap-disciplinas"
+  | "medias-por-trimestre";
 
 export type ChartDefinition = {
   slug: ChartSlug;
@@ -13,8 +14,10 @@ export type ChartDefinition = {
   yKey?: string;
   valueKey?: string;
   supportsTurno?: boolean;
+  supportsSerie?: boolean;
   supportsTurma?: boolean;
   supportsTrimestre?: boolean;
+  supportsDisciplina?: boolean;
   maxItems?: number;
 };
 
@@ -28,6 +31,17 @@ export const CHARTS: ChartDefinition[] = [
     supportsTurno: true,
     supportsTurma: true,
     supportsTrimestre: true
+  },
+  {
+    slug: "medias-por-trimestre",
+    title: "Gráficos Comparativos - Médias por Trimestre",
+    description: "Linha do tempo das médias por trimestre com filtros por turno, série, turma e disciplina",
+    type: "line",
+    yKey: "media",
+    supportsTurno: true,
+    supportsSerie: true,
+    supportsTurma: true,
+    supportsDisciplina: true
   },
   {
     slug: "turmas-trimestre",
