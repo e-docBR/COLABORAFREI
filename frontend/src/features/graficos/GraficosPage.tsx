@@ -194,7 +194,7 @@ export const GraficosPage = () => {
       <ResponsiveContainer width="100%" height={360}>
         <BarChart data={rawData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={chart.slug === "faltas-por-turma" ? "turma" : "disciplina"} />
+          <XAxis dataKey={chart.xKey ?? "disciplina"} />
           <YAxis />
           <Tooltip />
           <Bar dataKey={chart.yKey ?? "media"} fill={BAR_COLOR} radius={6} />

@@ -11,6 +11,7 @@ export type ChartDefinition = {
   title: string;
   description: string;
   type: "bar" | "line" | "pie" | "heatmap";
+  xKey?: string;
   yKey?: string;
   valueKey?: string;
   supportsTurno?: boolean;
@@ -27,6 +28,7 @@ export const CHARTS: ChartDefinition[] = [
     title: "Comparativo de médias por disciplina",
     description: "Médias filtradas por turno, turma e trimestre",
     type: "bar",
+    xKey: "disciplina",
     yKey: "media",
     supportsTurno: true,
     supportsTurma: true,
@@ -35,8 +37,9 @@ export const CHARTS: ChartDefinition[] = [
   {
     slug: "medias-por-trimestre",
     title: "Gráficos Comparativos - Médias por Trimestre",
-    description: "Linha do tempo das médias por trimestre com filtros por turno, série, turma e disciplina",
-    type: "line",
+    description: "Médias por trimestre com filtros por turno, série, turma e disciplina",
+    type: "bar",
+    xKey: "trimestre",
     yKey: "media",
     supportsTurno: true,
     supportsSerie: true,
@@ -66,6 +69,7 @@ export const CHARTS: ChartDefinition[] = [
     title: "Ranking de faltas por turma",
     description: "Turmas com maiores índices de faltas",
     type: "bar",
+    xKey: "turma",
     yKey: "faltas",
     supportsTurno: true
   },
