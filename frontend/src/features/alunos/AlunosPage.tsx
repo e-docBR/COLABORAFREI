@@ -70,45 +70,58 @@ export const AlunosPage = () => {
 
   return (
     <Box display="flex" flexDirection="column" gap={3}>
-      <Stack direction={{ xs: "column", md: "row" }} gap={2}>
-        <TextField
-          label="Nome ou matrícula"
-          fullWidth
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        <TextField
-          label="Turno"
-          select
-          SelectProps={{ native: true }}
-          value={turno}
-          onChange={(event) => setTurno(event.target.value)}
-        >
-          <option value="">Todos</option>
-          {turnoOptions.map((value) => (
-            <option key={value} value={value} disabled={isFetchingTurmas && !turnoOptions.length}>
-              {value}
-            </option>
-          ))}
-        </TextField>
-        <TextField
-          label="Turma"
-          select
-          SelectProps={{ native: true }}
-          value={turma}
-          onChange={(event) => setTurma(event.target.value)}
-        >
-          <option value="">Todas</option>
-          {turmaOptions.map((value) => (
-            <option key={value} value={value} disabled={isFetchingTurmas && !turmaOptions.length}>
-              {value}
-            </option>
-          ))}
-        </TextField>
-        <Button variant="contained" color="primary">
-          Novo Aluno
-        </Button>
-      </Stack>
+      <Grid container spacing={2} alignItems="center">
+        <Grid size={{ xs: 12, md: 5 }}>
+          <TextField
+            label="Nome ou matrícula"
+            fullWidth
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            InputProps={{ sx: { borderRadius: 3 } }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+          <TextField
+            label="Turno"
+            select
+            SelectProps={{ native: true }}
+            value={turno}
+            onChange={(event) => setTurno(event.target.value)}
+            fullWidth
+            sx={{ minWidth: 160, borderRadius: 3 }}
+          >
+            <option value="">Todos</option>
+            {turnoOptions.map((value) => (
+              <option key={value} value={value} disabled={isFetchingTurmas && !turnoOptions.length}>
+                {value}
+              </option>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+          <TextField
+            label="Turma"
+            select
+            SelectProps={{ native: true }}
+            value={turma}
+            onChange={(event) => setTurma(event.target.value)}
+            fullWidth
+            sx={{ minWidth: 160, borderRadius: 3 }}
+          >
+            <option value="">Todas</option>
+            {turmaOptions.map((value) => (
+              <option key={value} value={value} disabled={isFetchingTurmas && !turmaOptions.length}>
+                {value}
+              </option>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 2 }} display="flex" justifyContent={{ xs: "stretch", md: "flex-end" }}>
+          <Button variant="contained" color="primary" fullWidth sx={{ borderRadius: 3, minHeight: 48 }}>
+            Novo Aluno
+          </Button>
+        </Grid>
+      </Grid>
 
       {isError && <Alert severity="error">Não foi possível carregar a lista de alunos.</Alert>}
 

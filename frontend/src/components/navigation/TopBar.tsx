@@ -16,7 +16,7 @@ import {
   Typography
 } from "@mui/material";
 import { MouseEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logout } from "../../features/auth/authSlice";
@@ -40,8 +40,10 @@ export const TopBar = () => {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
+  const showSearch = location.pathname !== "/app/meu-boletim";
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -66,18 +68,22 @@ export const TopBar = () => {
         mb: 3
       }}
     >
-      <TextField
-        placeholder="Buscar alunos, turmas…"
-        size="small"
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
-            </InputAdornment>
-          ),
-          sx: { backgroundColor: "background.paper", borderRadius: 999 }
-        }}
-      />
+      {showSearch ? (
+        <TextField
+          placeholder="Buscar alunos, turmas…"
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+            sx: { backgroundColor: "background.paper", borderRadius: 999 }
+          }}
+        />
+      ) : (
+        <Box flex={1} />
+      )}
       <Box display="flex" alignItems="center" gap={2}>
         <IconButton color="inherit">
           <Badge color="error" variant="dot">

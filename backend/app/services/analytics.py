@@ -29,7 +29,15 @@ class DashboardAnalytics:
 
 def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
     total_alunos = session.execute(select(func.count(Aluno.id))).scalar_one() or 0
-    total_turmas = session.execute(select(func.count(func.distinct(Aluno.turma)))).scalar_one() or 0
+    # Normaliza o nome da turma para evitar contagens duplicadas por variações como "6º A" x "6º ANO A".
+    normalized_turma = func.trim(
+        func.replace(
+            func.replace(func.upper(Aluno.turma), " ANO ", " "),
+            "  ",
+            " ",
+        )
+    )
+    total_turmas = session.execute(select(func.count(func.distinct(normalized_turma)))).scalar_one() or 0
     media_geral = session.execute(select(func.avg(Nota.total))).scalar_one()
     media_geral_value = float(media_geral) if media_geral is not None else 0.0
 

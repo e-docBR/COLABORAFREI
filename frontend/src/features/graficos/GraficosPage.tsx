@@ -3,15 +3,15 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   CircularProgress,
   FormControl,
+  Grid2 as Grid,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  Tab,
-  Tabs,
   Typography,
   Table,
   TableBody,
@@ -207,22 +207,76 @@ export const GraficosPage = () => {
 
   return (
     <Stack spacing={3}>
-      <Tabs
-        value={chartSlug}
-        onChange={(_event, value) => setChartSlug(value)}
-        variant="scrollable"
-        allowScrollButtonsMobile
-        sx={{ borderBottom: 1, borderColor: "divider" }}
-      >
-        {CHARTS.map((chartItem) => (
-          <Tab key={chartItem.slug} label={chartItem.title} value={chartItem.slug} />
-        ))}
-      </Tabs>
+      <Grid container spacing={2}>
+        {CHARTS.map((chartItem) => {
+          const isActive = chartItem.slug === chartSlug;
+          return (
+            <Grid key={chartItem.slug} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <Card
+                variant={isActive ? "elevation" : "outlined"}
+                sx={{
+                  height: "100%",
+                  borderRadius: 3,
+                  borderColor: isActive ? "primary.main" : "divider",
+                  boxShadow: isActive ? 4 : 0,
+                  background: isActive
+                    ? "linear-gradient(135deg, rgba(110,68,255,0.06), rgba(76,201,240,0.06))"
+                    : "background.paper",
+                  transition: "all 160ms ease",
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 4,
+                  },
+                  minHeight: 160
+                }}
+              >
+                <CardActionArea sx={{ height: "100%", p: 2 }} onClick={() => setChartSlug(chartItem.slug)}>
+                  <Typography variant="subtitle2" color={isActive ? "primary" : "text.secondary"} fontWeight={700} gutterBottom noWrap>
+                    {chartItem.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ minHeight: 40 }} noWrap>
+                    {chartItem.description}
+                  </Typography>
+                  <Box mt={1.5} display="flex" gap={0.75} flexWrap="wrap">
+                    {chartItem.supportsTurno && (
+                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
+                        Turno
+                      </Typography>
+                    )}
+                    {chartItem.supportsSerie && (
+                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
+                        Série
+                      </Typography>
+                    )}
+                    {chartItem.supportsTurma && (
+                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
+                        Turma
+                      </Typography>
+                    )}
+                    {chartItem.supportsDisciplina && (
+                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
+                        Disciplina
+                      </Typography>
+                    )}
+                    {chartItem.supportsTrimestre && (
+                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
+                        Trimestre
+                      </Typography>
+                    )}
+                  </Box>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
 
       <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
         {chart.supportsTurno && (
           <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="turno-label">Turno</InputLabel>
+            <InputLabel id="turno-label" shrink>
+              Turno
+            </InputLabel>
             <Select
               labelId="turno-label"
               label="Turno"
@@ -241,7 +295,9 @@ export const GraficosPage = () => {
 
         {chart.supportsSerie && (
           <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="serie-label">Série</InputLabel>
+            <InputLabel id="serie-label" shrink>
+              Série
+            </InputLabel>
             <Select
               labelId="serie-label"
               label="Série"
@@ -260,7 +316,9 @@ export const GraficosPage = () => {
 
         {chart.supportsTurma && (
           <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel id="turma-label">Turma</InputLabel>
+            <InputLabel id="turma-label" shrink>
+              Turma
+            </InputLabel>
             <Select
               labelId="turma-label"
               label="Turma"
@@ -279,7 +337,9 @@ export const GraficosPage = () => {
 
         {chart.supportsDisciplina && (
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel id="disciplina-label">Disciplina</InputLabel>
+            <InputLabel id="disciplina-label" shrink>
+              Disciplina
+            </InputLabel>
             <Select
               labelId="disciplina-label"
               label="Disciplina"
@@ -298,7 +358,9 @@ export const GraficosPage = () => {
 
         {chart.supportsTrimestre && (
           <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="trimestre-label">Trimestre</InputLabel>
+            <InputLabel id="trimestre-label" shrink>
+              Trimestre
+            </InputLabel>
             <Select
               labelId="trimestre-label"
               label="Trimestre"

@@ -41,7 +41,7 @@ export const TurmasPage = () => {
   return (
     <Box display="flex" flexDirection="column" gap={3}>
       <TextField
-        placeholder="Buscar alunos, turmas..."
+        placeholder="Buscar turmas..."
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         fullWidth

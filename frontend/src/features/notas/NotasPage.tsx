@@ -145,10 +145,11 @@ export const NotasPage = () => {
           <TextField
             label="Turma"
             select
-            SelectProps={{ native: true }}
+            SelectProps={{ native: true, displayEmpty: true }}
             value={turma}
             onChange={(event) => setTurma(event.target.value)}
             fullWidth
+            InputLabelProps={{ shrink: true }}
           >
             <option value="">Todas</option>
             {turmaOptions.map((option) => (
@@ -160,10 +161,11 @@ export const NotasPage = () => {
           <TextField
             label="Disciplina"
             select
-            SelectProps={{ native: true }}
+            SelectProps={{ native: true, displayEmpty: true }}
             value={disciplina}
             onChange={(event) => setDisciplina(event.target.value)}
             fullWidth
+            InputLabelProps={{ shrink: true }}
           >
             <option value="">Todas</option>
             {disciplinaOptions.map((option) => (
@@ -175,10 +177,11 @@ export const NotasPage = () => {
           <TextField
             label="Turno"
             select
-            SelectProps={{ native: true }}
+            SelectProps={{ native: true, displayEmpty: true }}
             value={turno}
             onChange={(event) => setTurno(event.target.value)}
             fullWidth
+            InputLabelProps={{ shrink: true }}
           >
             <option value="">Todos</option>
             {turnoOptions.map((option) => (
