@@ -15,8 +15,16 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .[dev]
 cp .env.example .env
+# Inicializar banco de dados e migrações
+alembic upgrade head
 flask --app app run --debug
 ```
+
+## Funcionalidades
+- **Autenticação**: Login JWT, refresh token, alteração de senha.
+- **Usuários**: Upload de foto de perfil, gestão de usuários.
+- **Acadêmico**: Alunos, Turmas, Notas, Relatórios.
+- **Ingestão**: Upload de boletins PDF.
 
 ## Estrutura
 ```

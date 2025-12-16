@@ -14,5 +14,6 @@ class Usuario(Base):
     role: Mapped[str] = mapped_column(String(32), default="professor")
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     aluno_id: Mapped[int | None] = mapped_column(ForeignKey("alunos.id"), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     aluno = relationship("Aluno", back_populates="usuario")

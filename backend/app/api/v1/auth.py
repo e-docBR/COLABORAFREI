@@ -36,6 +36,7 @@ def register(parent: Blueprint) -> None:
                     "role": user.role,
                     "is_admin": user.is_admin,
                     "aluno_id": user.aluno_id,
+                    "photo_url": user.photo_url,
                     "must_change_password": user.must_change_password,
                 },
             }

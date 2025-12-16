@@ -1,11 +1,14 @@
 """Endpoints para gerenciamento administrativo de usuários."""
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_from_directory
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
+from pathlib import Path
+from werkzeug.utils import secure_filename
 
+from ...core.config import settings
 from ...core.database import session_scope
 from ...core.security import hash_password
 from ...models import Aluno, Usuario
@@ -28,6 +31,7 @@ def serialize_usuario(usuario: Usuario) -> dict[str, object]:
         "role": usuario.role,
         "is_admin": usuario.is_admin,
         "aluno_id": usuario.aluno_id,
+        "photo_url": usuario.photo_url,
         "must_change_password": usuario.must_change_password,
         "aluno": aluno_data,
     }
@@ -203,5 +207,40 @@ def register(parent: Blueprint) -> None:
             session.delete(usuario)
 
         return ("", 204)
+
+    @bp.post("/usuarios/me/photo")
+    @jwt_required()
+    def upload_photo():
+        if "file" not in request.files:
+            return jsonify({"error": "Arquivo não enviado"}), 400
+            
+        file = request.files["file"]
+        if not file.filename:
+            return jsonify({"error": "Nome de arquivo inválido"}), 400
+            
+        user_id = get_jwt_identity()
+        filename = secure_filename(f"user_{user_id}_{file.filename}")
+        
+        # Ensure directory exists
+        photos_dir = Path(settings.upload_folder) / "photos"
+        photos_dir.mkdir(parents=True, exist_ok=True)
+        
+        filepath = photos_dir / filename
+        file.save(filepath)
+        
+        # Update user in DB
+        photo_url = f"/api/v1/static/photos/{filename}"
+        with session_scope() as session:
+            user = session.get(Usuario, int(user_id))
+            if user:
+                user.photo_url = photo_url
+                session.add(user)
+                
+        return jsonify({"photo_url": photo_url})
+
+    @bp.route("/static/photos/<path:filename>")
+    def serve_photo(filename):
+        photos_dir = Path(settings.upload_folder) / "photos"
+        return send_from_directory(photos_dir, filename)
 
     parent.register_blueprint(bp)
