@@ -56,7 +56,7 @@ export const AlunoDetailPage = () => {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Breadcrumbs>
-          <Link component={RouterLink} to="/alunos" underline="hover">
+          <Link component={RouterLink} to="/app/alunos" underline="hover">
             Alunos
           </Link>
           <Typography color="text.primary">{data.nome}</Typography>

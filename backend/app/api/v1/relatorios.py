@@ -91,7 +91,12 @@ def build_disciplinas_notas_baixas(
     turma: str | None = None,
     disciplina: str | None = None,
 ):
-    # Mapeamento de disciplinas para normalização
+    """Lista disciplinas com menores médias, normalizando nomes.
+
+    Ajuste: calcula média ponderada pela quantidade de notas por disciplina
+    (antes fazia média das médias, distorcendo casos com nomes duplicados).
+    """
+
     normalizacao = {
         "ARTES": "ARTE",
         "INGLÊS": "LÍNGUA INGLESA",
@@ -99,26 +104,32 @@ def build_disciplinas_notas_baixas(
         "LÍNGUA PORTUGUÊSA": "LÍNGUA PORTUGUESA",
         "LINGUA PORTUGUESA": "LÍNGUA PORTUGUESA",
     }
-    
-    query = session.query(Nota.disciplina, func.avg(Nota.total).label("media")).join(Aluno)
+
+    query = session.query(
+        Nota.disciplina,
+        func.sum(Nota.total).label("soma"),
+        func.count(Nota.id).label("qtd"),
+    ).join(Aluno)
     query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
-    query = query.group_by(Nota.disciplina).order_by(func.avg(Nota.total))
-    
-    # Agrupa por disciplina normalizada
-    disciplinas_map = {}
-    for disciplina, media in query.all():
-        disc_normalizada = normalizacao.get(disciplina.upper(), disciplina)
-        if disc_normalizada not in disciplinas_map:
-            disciplinas_map[disc_normalizada] = []
-        disciplinas_map[disc_normalizada].append(float(media))
-    
-    # Calcula média para cada disciplina normalizada
+    query = query.group_by(Nota.disciplina)
+
+    acumulado: dict[str, dict[str, float | int]] = {}
+    for disciplina_nome, soma, qtd in query.all():
+        if not disciplina_nome:
+            continue
+        disc_normalizada = normalizacao.get(disciplina_nome.upper(), disciplina_nome)
+        bucket = acumulado.setdefault(disc_normalizada, {"soma": 0.0, "qtd": 0})
+        bucket["soma"] += float(soma or 0)
+        bucket["qtd"] += int(qtd or 0)
+
     result = []
-    for disciplina, medias in disciplinas_map.items():
-        media_final = sum(medias) / len(medias)
-        result.append({"disciplina": disciplina, "media": round(media_final, 1)})
-    
-    # Ordena por média crescente
+    for disciplina_nome, valores in acumulado.items():
+        total_qtd = valores["qtd"]
+        if not total_qtd:
+            continue
+        media_final = (valores["soma"] / total_qtd) if total_qtd else 0.0
+        result.append({"disciplina": disciplina_nome, "media": round(media_final, 1)})
+
     result.sort(key=lambda x: x["media"])
     return result
 

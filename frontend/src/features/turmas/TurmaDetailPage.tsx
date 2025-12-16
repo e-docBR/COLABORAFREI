@@ -53,7 +53,7 @@ export const TurmaDetailPage = () => {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Breadcrumbs>
-          <Link component={RouterLink} to="/turmas" underline="hover">
+          <Link component={RouterLink} to="/app/turmas" underline="hover">
             Turmas
           </Link>
           <Typography color="text.primary">{data.turma}</Typography>

@@ -16,6 +16,7 @@ import { LoginPage } from "../features/auth/LoginPage";
 import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { store } from "./store";
 import { MeuBoletimPage } from "../features/alunos/MeuBoletimPage";
+import { LandingPage } from "../features/landing/LandingPage";
 
 const requireAuth = async () => {
   const state = store.getState();
@@ -29,6 +30,37 @@ const requireAuth = async () => {
 export const appRouter = createBrowserRouter([
   {
     path: "/",
+    element: <LandingPage />
+  },
+  {
+    path: "/relatorios/:slug?",
+    loader: ({ params }) => {
+      if (params.slug) {
+        throw redirect(`/app/relatorios/${params.slug}`);
+      }
+      throw redirect(`/app/relatorios`);
+    }
+  },
+  {
+    path: "/alunos/:alunoId?",
+    loader: ({ params }) => {
+      if (params.alunoId) {
+        throw redirect(`/app/alunos/${params.alunoId}`);
+      }
+      throw redirect(`/app/alunos`);
+    }
+  },
+  {
+    path: "/turmas/:turmaId?",
+    loader: ({ params }) => {
+      if (params.turmaId) {
+        throw redirect(`/app/turmas/${params.turmaId}`);
+      }
+      throw redirect(`/app/turmas`);
+    }
+  },
+  {
+    path: "/app",
     loader: requireAuth,
     element: <DashboardLayout />,
     children: [

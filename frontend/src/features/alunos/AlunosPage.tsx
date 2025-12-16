@@ -78,17 +78,19 @@ export const AlunosPage = () => {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             InputProps={{ sx: { borderRadius: 3 } }}
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
           <TextField
             label="Turno"
             select
-            SelectProps={{ native: true }}
+            SelectProps={{ native: true, displayEmpty: true }}
             value={turno}
             onChange={(event) => setTurno(event.target.value)}
             fullWidth
             sx={{ minWidth: 160, borderRadius: 3 }}
+            InputLabelProps={{ shrink: true }}
           >
             <option value="">Todos</option>
             {turnoOptions.map((value) => (
@@ -102,11 +104,12 @@ export const AlunosPage = () => {
           <TextField
             label="Turma"
             select
-            SelectProps={{ native: true }}
+            SelectProps={{ native: true, displayEmpty: true }}
             value={turma}
             onChange={(event) => setTurma(event.target.value)}
             fullWidth
             sx={{ minWidth: 160, borderRadius: 3 }}
+            InputLabelProps={{ shrink: true }}
           >
             <option value="">Todas</option>
             {turmaOptions.map((value) => (

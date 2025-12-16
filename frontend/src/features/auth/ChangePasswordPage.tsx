@@ -50,7 +50,7 @@ export const ChangePasswordPage = () => {
             : undefined
         )
       );
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err) {
       setError(resolveErrorMessage(err));
     }
@@ -66,7 +66,7 @@ export const ChangePasswordPage = () => {
   }
 
   if (!user.must_change_password) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return (

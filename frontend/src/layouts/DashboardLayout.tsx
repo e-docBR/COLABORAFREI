@@ -12,8 +12,8 @@ export const DashboardLayout = () => {
   if (user?.must_change_password) {
     return <Navigate to="/alterar-senha" state={{ from: location }} replace />;
   }
-  if (user?.role === "aluno" && location.pathname !== "/meu-boletim") {
-    return <Navigate to="/meu-boletim" replace />;
+  if (user?.role === "aluno" && location.pathname !== "/app/meu-boletim") {
+    return <Navigate to="/app/meu-boletim" replace />;
   }
   return (
     <Box display="flex" minHeight="100vh" bgcolor="background.default">

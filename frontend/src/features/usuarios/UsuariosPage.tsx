@@ -163,11 +163,13 @@ export const UsuariosPage = () => {
           fullWidth
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          InputLabelProps={{ shrink: true }}
         />
         <TextField
           label="Perfil"
           select
-          SelectProps={{ native: true }}
+          SelectProps={{ native: true, displayEmpty: true }}
+          InputLabelProps={{ shrink: true }}
           sx={{ minWidth: 180 }}
           value={roleFilter}
           onChange={(event) => setRoleFilter(event.target.value)}

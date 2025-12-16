@@ -5,6 +5,7 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  Chip,
   CircularProgress,
   FormControl,
   Grid2 as Grid,
@@ -21,6 +22,12 @@ import {
   TableRow
 } from "@mui/material";
 import { useMemo, useState } from "react";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import GridOnIcon from "@mui/icons-material/GridOn";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import EqualizerIcon from "@mui/icons-material/Equalizer";
 import {
   Bar,
   BarChart,
@@ -46,6 +53,15 @@ import { CHARTS, CHARTS_BY_SLUG, type ChartSlug, TRIMESTRES, TURNOS } from "./co
 
 const BAR_COLOR = "#6E44FF";
 const PIE_COLORS = ["#6E44FF", "#F06EFF", "#4CC9F0", "#FFD166"];
+
+const CHART_ICONS: Record<string, React.ElementType> = {
+  "disciplinas-medias": BarChartIcon,
+  "medias-por-trimestre": EqualizerIcon,
+  "turmas-trimestre": TimelineIcon,
+  "situacao-distribuicao": PieChartIcon,
+  "faltas-por-turma": BarChartIcon,
+  "heatmap-disciplinas": GridOnIcon
+};
 
 export const GraficosPage = () => {
   const [chartSlug, setChartSlug] = useState<ChartSlug>("disciplinas-medias");
@@ -210,60 +226,96 @@ export const GraficosPage = () => {
       <Grid container spacing={2}>
         {CHARTS.map((chartItem) => {
           const isActive = chartItem.slug === chartSlug;
+          const Icon = CHART_ICONS[chartItem.slug] ?? BarChartIcon;
+
           return (
-            <Grid key={chartItem.slug} size={{ xs: 12, sm: 6, lg: 4 }}>
+            <Grid key={chartItem.slug} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <Card
                 variant={isActive ? "elevation" : "outlined"}
                 sx={{
                   height: "100%",
                   borderRadius: 3,
                   borderColor: isActive ? "primary.main" : "divider",
-                  boxShadow: isActive ? 4 : 0,
+                  boxShadow: isActive ? "0 4px 12px rgba(110, 68, 255, 0.15)" : "none",
                   background: isActive
-                    ? "linear-gradient(135deg, rgba(110,68,255,0.06), rgba(76,201,240,0.06))"
+                    ? "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)"
                     : "background.paper",
-                  transition: "all 160ms ease",
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 4,
-                  },
-                  minHeight: 160
+                  position: "relative",
+                  overflow: "visible",
+                  transition: "all 0.3s ease",
+                  borderWidth: isActive ? 2 : 1,
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                    borderColor: "primary.main"
+                  }
                 }}
               >
-                <CardActionArea sx={{ height: "100%", p: 2 }} onClick={() => setChartSlug(chartItem.slug)}>
-                  <Typography variant="subtitle2" color={isActive ? "primary" : "text.secondary"} fontWeight={700} gutterBottom noWrap>
+                <CardActionArea
+                  sx={{
+                    height: "100%",
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    justifyContent: "flex-start"
+                  }}
+                  onClick={() => setChartSlug(chartItem.slug)}
+                >
+                  <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: 2,
+                      bgcolor: isActive ? "primary.main" : "action.hover",
+                      color: isActive ? "common.white" : "text.secondary",
+                      mb: 1.5,
+                      transition: "all 0.3s ease"
+                    }}
+                  >
+                    <Icon fontSize="small" />
+                  </Box>
+
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={700}
+                    gutterBottom
+                    color={isActive ? "text.primary" : "text.primary"}
+                    lineHeight={1.2}
+                  >
                     {chartItem.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ minHeight: 40 }} noWrap>
+
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, flex: 1, lineHeight: 1.4 }}>
                     {chartItem.description}
                   </Typography>
-                  <Box mt={1.5} display="flex" gap={0.75} flexWrap="wrap">
+
+                  <Stack direction="row" gap={0.5} flexWrap="wrap">
                     {chartItem.supportsTurno && (
-                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
-                        Turno
-                      </Typography>
+                      <Chip label="Turno" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
                     )}
                     {chartItem.supportsSerie && (
-                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
-                        Série
-                      </Typography>
+                      <Chip label="Série" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
                     )}
                     {chartItem.supportsTurma && (
-                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
-                        Turma
-                      </Typography>
+                      <Chip label="Turma" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
                     )}
                     {chartItem.supportsDisciplina && (
-                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
-                        Disciplina
-                      </Typography>
+                      <Chip
+                        label="Disc."
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: "0.65rem", height: 20 }}
+                      />
                     )}
                     {chartItem.supportsTrimestre && (
-                      <Typography variant="caption" sx={{ px: 1, py: 0.4, borderRadius: 2, bgcolor: "primary.50" }}>
-                        Trimestre
-                      </Typography>
+                      <Chip
+                        label="Trim."
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: "0.65rem", height: 20 }}
+                      />
                     )}
-                  </Box>
+                  </Stack>
                 </CardActionArea>
               </Card>
             </Grid>

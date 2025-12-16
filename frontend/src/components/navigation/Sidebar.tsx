@@ -11,17 +11,19 @@ import { NavLink } from "react-router-dom";
 import { useMemo } from "react";
 import { useAppSelector } from "../../app/hooks";
 
+const appBasePath = "/app";
+
 const staffNavItems = [
-  { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
-  { label: "Alunos", icon: <PeopleIcon />, path: "/alunos" },
-  { label: "Turmas", icon: <ClassIcon />, path: "/turmas" },
-  { label: "Notas", icon: <TableViewIcon />, path: "/notas" },
-  { label: "Gráficos", icon: <InsightsIcon />, path: "/graficos" },
-  { label: "Relatórios", icon: <ArticleIcon />, path: "/relatorios" },
-  { label: "Uploads", icon: <UploadFileIcon />, path: "/uploads" }
+  { label: "Dashboard", icon: <DashboardIcon />, path: appBasePath },
+  { label: "Alunos", icon: <PeopleIcon />, path: `${appBasePath}/alunos` },
+  { label: "Turmas", icon: <ClassIcon />, path: `${appBasePath}/turmas` },
+  { label: "Notas", icon: <TableViewIcon />, path: `${appBasePath}/notas` },
+  { label: "Gráficos", icon: <InsightsIcon />, path: `${appBasePath}/graficos` },
+  { label: "Relatórios", icon: <ArticleIcon />, path: `${appBasePath}/relatorios` },
+  { label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` }
 ];
 
-const alunoNavItems = [{ label: "Meu Boletim", icon: <PeopleIcon />, path: "/meu-boletim" }];
+const alunoNavItems = [{ label: "Meu Boletim", icon: <PeopleIcon />, path: `${appBasePath}/meu-boletim` }];
 
 export const Sidebar = () => {
   const user = useAppSelector((state) => state.auth.user);
@@ -31,7 +33,7 @@ export const Sidebar = () => {
     if (isAluno) return alunoNavItems;
     const base = [...staffNavItems];
     if (isAdmin) {
-      base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: "/usuarios" });
+      base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
     }
     return base;
   }, [isAluno, isAdmin]);

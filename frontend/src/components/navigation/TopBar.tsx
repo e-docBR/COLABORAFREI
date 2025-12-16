@@ -43,7 +43,7 @@ export const TopBar = () => {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
-  const showSearch = location.pathname !== "/app/meu-boletim";
+  const showSearch = !["/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas"].includes(location.pathname);
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);

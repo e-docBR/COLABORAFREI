@@ -186,7 +186,7 @@ export const RelatorioDetailPage = () => {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Breadcrumbs>
-          <Link component={RouterLink} to="/relatorios" underline="hover">
+          <Link component={RouterLink} to="/app/relatorios" underline="hover">
             Relatórios
           </Link>
           <Typography color="text.primary">{definition.title}</Typography>
