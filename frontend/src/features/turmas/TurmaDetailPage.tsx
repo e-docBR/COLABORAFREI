@@ -24,7 +24,7 @@ import { useGetTurmaAlunosQuery } from "../../lib/api";
 
 const formatSituacao = (situacao?: string | null) => {
   if (!situacao) return { label: "Sem status", color: "default" as const };
-  if (situacao.toUpperCase().startsWith("APR")) {
+  if (situacao.toUpperCase().startsWith("APR") || situacao.toUpperCase() === "AR") {
     return { label: "Aprovado", color: "success" as const };
   }
   if (situacao.toUpperCase().startsWith("REP")) {

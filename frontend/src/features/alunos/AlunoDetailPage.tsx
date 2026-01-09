@@ -26,7 +26,7 @@ import { useGetAlunoQuery } from "../../lib/api";
 const formatSituacao = (value?: string | null) => {
   if (!value) return { label: "-", color: "default" as const };
   const normalized = value.toUpperCase();
-  if (normalized.startsWith("APR")) return { label: "Aprovado", color: "success" as const };
+  if (normalized.startsWith("APR") || normalized === "AR") return { label: "Aprovado", color: "success" as const };
   if (normalized.startsWith("REP")) return { label: "Reprovado", color: "error" as const };
   if (normalized.startsWith("ACC") || normalized.startsWith("APCC")) return { label: "APCC", color: "info" as const };
   if (normalized.startsWith("REC")) return { label: "Recuperação", color: "warning" as const };
