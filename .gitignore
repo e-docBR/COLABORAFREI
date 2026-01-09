@@ -36,3 +36,4 @@ coverage/
 # Generated data/uploads
 /data/uploads/
 /BOLETINS FREI/
+*.db

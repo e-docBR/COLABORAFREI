@@ -54,6 +54,13 @@ import { CHARTS, CHARTS_BY_SLUG, type ChartSlug, TRIMESTRES, TURNOS } from "./co
 const BAR_COLOR = "#6E44FF";
 const PIE_COLORS = ["#6E44FF", "#F06EFF", "#4CC9F0", "#FFD166"];
 
+const STATUS_COLORS: Record<string, string> = {
+  "Aprovado": "#6E44FF",
+  "Recuperação": "#FFD166",
+  "Reprovado": "#FF4444",
+  "Outros": "#CCCCCC"
+};
+
 const CHART_ICONS: Record<string, React.ElementType> = {
   "disciplinas-medias": BarChartIcon,
   "medias-por-trimestre": EqualizerIcon,
@@ -147,8 +154,11 @@ export const GraficosPage = () => {
           <PieChart>
             <Tooltip formatter={(value) => `${value} alunos`} />
             <Pie data={rawData} dataKey={chart.valueKey ?? "total"} nameKey="situacao" label>
-              {rawData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+              {rawData.map((entry: any, index: number) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={STATUS_COLORS[entry.situacao] || PIE_COLORS[index % PIE_COLORS.length]} 
+                />
               ))}
             </Pie>
           </PieChart>

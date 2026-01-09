@@ -134,9 +134,18 @@ def _calcular_situacao(notas: list[dict[str, str | float | int | None]]) -> str 
     situacoes = [str(nota["situacao"]).upper() for nota in notas if nota.get("situacao")]
     if not situacoes:
         return None
-    if any(sit not in {"APR", "APROVADO"} for sit in situacoes):
+    if any(sit in {"REP", "REPROVADO"} for sit in situacoes):
+        return "REP"
+    
+    # Se tiver ACC em alguma matéria, mas tudo o resto for APROVADO/APR/ACC, retorna APCC.
+    # Se tiver algo fora desse conjunto (e não é REP), cai no REC.
+    if any(sit not in {"APR", "APROVADO", "ACC"} for sit in situacoes):
         return "REC"
-    return situacoes[0]
+        
+    if any(sit == "ACC" for sit in situacoes):
+        return "APCC"
+
+    return "APR"
 
 
 def _slugify(value: str) -> str:

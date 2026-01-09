@@ -2,6 +2,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
 import LogoutIcon from "@mui/icons-material/Logout";
 import LockResetIcon from "@mui/icons-material/LockReset";
+import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import {
   Avatar,
   Badge,
@@ -19,7 +20,8 @@ import { MouseEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { logout } from "../../features/auth/authSlice";
+import { logout, updateUser } from "../../features/auth/authSlice";
+import { useUploadPhotoMutation } from "../../lib/api";
 
 const getInitials = (value?: string) =>
   value
@@ -43,7 +45,8 @@ export const TopBar = () => {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
-  const showSearch = !["/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas"].includes(location.pathname);
+  const showSearch = !["/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas", "/app/uploads"].includes(location.pathname);
+  const [uploadPhoto] = useUploadPhotoMutation();
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -53,8 +56,32 @@ export const TopBar = () => {
   };
   const handleLogout = () => {
     handleMenuClose();
+    const targetUrl = user?.role === "aluno" ? "/login?perfil=aluno" : "/login";
     dispatch(logout());
-    navigate("/login", { replace: true });
+    navigate(targetUrl, { replace: true });
+  };
+
+  const handleAddPhoto = () => {
+    handleMenuClose();
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+          const { photo_url } = await uploadPhoto(formData).unwrap();
+          if (user) {
+            dispatch(updateUser({ ...user, photo_url }));
+          }
+        } catch (error) {
+          console.error("Failed to upload photo", error);
+        }
+      }
+    };
+    input.click();
   };
 
   return (
@@ -108,7 +135,9 @@ export const TopBar = () => {
           aria-haspopup="true"
           aria-expanded={menuOpen ? "true" : undefined}
         >
-          <Avatar>{getInitials(user?.username)}</Avatar>
+          <Avatar src={user?.photo_url ? `${import.meta.env.VITE_API_BASE_URL || "/api/v1"}${user.photo_url.replace("/api/v1", "")}` : undefined}>
+            {getInitials(user?.username)}
+          </Avatar>
           <Typography variant="caption" color="text.secondary">
             Menu
           </Typography>
@@ -130,6 +159,12 @@ export const TopBar = () => {
             </Typography>
           </Box>
           <Divider />
+          <MenuItem onClick={handleAddPhoto}>
+            <ListItemIcon>
+              <AddAPhotoIcon fontSize="small" />
+            </ListItemIcon>
+            Acrescentar foto
+          </MenuItem>
           <MenuItem onClick={handleChangePassword}>
             <ListItemIcon>
               <LockResetIcon fontSize="small" />

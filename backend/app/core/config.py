@@ -14,12 +14,14 @@ class Settings(BaseSettings):
     allowed_origins: List[str] = Field(default_factory=lambda: ["http://localhost:5173"], alias="ALLOWED_ORIGINS")
     upload_folder: str = Field(default="../data/uploads", alias="UPLOAD_FOLDER")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    flask_debug: bool = Field(default=False, alias="FLASK_DEBUG")
 
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
         "populate_by_name": True,
+        "extra": "ignore"
     }
 
 

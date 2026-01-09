@@ -61,13 +61,15 @@ export const ChangePasswordPage = () => {
     navigate("/login", { replace: true });
   };
 
+  const handleCancel = () => {
+    navigate("/app");
+  };
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.must_change_password) {
-    return <Navigate to="/app" replace />;
-  }
+  const isForced = user.must_change_password;
 
   return (
     <Box
@@ -81,10 +83,12 @@ export const ChangePasswordPage = () => {
       <Card sx={{ maxWidth: 420, width: "100%", borderRadius: 6 }}>
         <CardContent>
           <Typography variant="h5" fontWeight={600} mb={1}>
-            Atualize sua senha
+            {isForced ? "Atualize sua senha" : "Alterar senha"}
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
-            Por segurança, você precisa definir uma nova senha antes de acessar a plataforma.
+            {isForced
+              ? "Por segurança, você precisa definir uma nova senha antes de acessar a plataforma."
+              : "Preencha os campos abaixo para definir uma nova senha."}
           </Typography>
           <Stack component="form" gap={2} onSubmit={handleSubmit}>
             <TextField
@@ -117,9 +121,15 @@ export const ChangePasswordPage = () => {
               <Button type="submit" variant="contained" fullWidth disabled={isLoading}>
                 {isLoading ? "Salvando…" : "Salvar senha"}
               </Button>
-              <Button variant="text" fullWidth onClick={handleLogout}>
-                Sair
-              </Button>
+              {isForced ? (
+                <Button variant="text" fullWidth onClick={handleLogout}>
+                  Sair
+                </Button>
+              ) : (
+                <Button variant="text" fullWidth onClick={handleCancel}>
+                  Cancelar
+                </Button>
+              )}
             </Stack>
           </Stack>
         </CardContent>

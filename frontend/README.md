@@ -30,6 +30,11 @@ src/
   theme/       # tokens e tema MUI
 ```
 
+## Funcionalidades
+- **Dashboard**: KPIs e gráficos de desempenho.
+- **Perfil**: Alteração de senha e upload de foto de perfil.
+- **Gestão**: Visualização de alunos, turmas e notas.
+
 ## Próximos Passos
 - Conectar RTK Query aos endpoints Flask.
 - Implementar guardas reais de autenticação.

@@ -68,8 +68,12 @@ def register(parent: Blueprint) -> None:
             return jsonify({"error": "Campos obrigatórios: senha atual e nova senha"}), 400
 
         user_id = get_jwt_identity()
+        print(f"DEBUG: change_password user_id={user_id} type={type(user_id)}")
         with session_scope() as session:
+            all_users = session.query(Usuario).all()
+            print(f"DEBUG: all users: {[u.id for u in all_users]}")
             user = session.get(Usuario, int(user_id))
+            print(f"DEBUG: user found={user}")
             if not user:
                 return jsonify({"error": "Usuário não encontrado"}), 404
             if not verify_password(current_password, user.password_hash):

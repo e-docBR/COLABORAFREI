@@ -27,6 +27,8 @@ const formatSituacao = (value?: string | null) => {
   if (!value) return { label: "-", color: "default" as const };
   const normalized = value.toUpperCase();
   if (normalized.startsWith("APR")) return { label: "Aprovado", color: "success" as const };
+  if (normalized.startsWith("REP")) return { label: "Reprovado", color: "error" as const };
+  if (normalized.startsWith("ACC") || normalized.startsWith("APCC")) return { label: "APCC", color: "info" as const };
   if (normalized.startsWith("REC")) return { label: "Recuperação", color: "warning" as const };
   return { label: value, color: "default" as const };
 };
@@ -117,10 +119,10 @@ export const AlunoDetailPage = () => {
               return (
                 <TableRow key={nota.id} hover>
                   <TableCell>{nota.disciplina}</TableCell>
-                    <TableCell>{formatNota(nota.trimestre1)}</TableCell>
-                    <TableCell>{formatNota(nota.trimestre2)}</TableCell>
-                    <TableCell>{formatNota(nota.trimestre3)}</TableCell>
-                    <TableCell>{formatNota(nota.total)}</TableCell>
+                  <TableCell>{formatNota(nota.trimestre1)}</TableCell>
+                  <TableCell>{formatNota(nota.trimestre2)}</TableCell>
+                  <TableCell>{formatNota(nota.trimestre3)}</TableCell>
+                  <TableCell>{formatNota(nota.total)}</TableCell>
                   <TableCell>{nota.faltas ?? "-"}</TableCell>
                   <TableCell>
                     <Chip label={situacao.label} color={situacao.color} size="small" variant="outlined" />

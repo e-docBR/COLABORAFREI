@@ -9,6 +9,7 @@ interface AuthState {
     role?: string;
     is_admin?: boolean;
     aluno_id?: number | null;
+    photo_url?: string;
     must_change_password?: boolean;
   };
 }

@@ -27,6 +27,12 @@ const formatSituacao = (situacao?: string | null) => {
   if (situacao.toUpperCase().startsWith("APR")) {
     return { label: "Aprovado", color: "success" as const };
   }
+  if (situacao.toUpperCase().startsWith("REP")) {
+    return { label: "Reprovado", color: "error" as const };
+  }
+  if (situacao.toUpperCase().startsWith("ACC") || situacao.toUpperCase().startsWith("APCC")) {
+    return { label: "APCC", color: "info" as const };
+  }
   return { label: "Recuperação", color: "warning" as const };
 };
 

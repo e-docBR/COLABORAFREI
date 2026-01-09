@@ -25,6 +25,7 @@ type LoginResponse = {
     role?: string;
     is_admin?: boolean;
     aluno_id?: number | null;
+    photo_url?: string;
     must_change_password?: boolean;
   };
 };
@@ -35,6 +36,7 @@ export type UsuarioAccount = {
   role?: string;
   is_admin: boolean;
   aluno_id?: number | null;
+  photo_url?: string;
   must_change_password: boolean;
   aluno?: {
     id: number;
@@ -328,6 +330,13 @@ export const api = createApi({
         body
       })
     }),
+    uploadPhoto: builder.mutation<{ photo_url: string }, FormData>({
+      query: (formData) => ({
+        url: "/usuarios/me/photo",
+        method: "POST",
+        body: formData,
+      }),
+    }),
     listUsuarios: builder.query<ListUsuariosResponse, ListUsuariosParams | void>({
       query: (params) => ({
         url: "/usuarios",
@@ -374,6 +383,7 @@ export const {
   useListNotasQuery,
   useGetNotasFiltrosQuery,
   useChangePasswordMutation,
+  useUploadPhotoMutation,
   useListUsuariosQuery,
   useCreateUsuarioMutation,
   useUpdateUsuarioMutation,

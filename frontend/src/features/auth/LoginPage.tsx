@@ -44,6 +44,7 @@ export const LoginPage = () => {
         { value: "admin", label: "Administração" },
         { value: "coordenacao", label: "Coordenação" },
         { value: "orientacao", label: "Orientação" },
+        { value: "professor", label: "Professor" },
         { value: "direcao", label: "Direção" }
       ];
       const studentRoles = [

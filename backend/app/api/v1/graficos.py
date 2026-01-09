@@ -1,6 +1,7 @@
 """Endpoints para gráficos dinâmicos do dashboard."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Callable
 
 from flask import Blueprint, jsonify, request
@@ -144,27 +145,51 @@ def _situacao_distribuicao(
     _disciplina: str | None,
 ):
     # Conta alunos únicos por situação (não registros de notas)
-    # Agrupa situações de cada aluno e considera a melhor situação
+    # Agrupa situações de cada aluno e considera a PIOR situação
     
     # Busca todas as notas com filtros aplicados
     query = session.query(Nota.aluno_id, Nota.situacao)
     query = query.join(Aluno, Nota.aluno_id == Aluno.id)
     query = _apply_common_filters(query, turno, serie, turma, None)
     
-    # Agrupa por aluno e determina melhor situação
+    # Agrupa por aluno e determina situação
+    # Lógica: Se tiver QUALQUER reprovação/recuperação -> Recuperação
+    # Se não tiver reprovação mas tiver aprovação -> Aprovado
+    # Senão -> Outros
+    
     aluno_situacoes: dict[int, str] = {}
+    
+    # Mapeamento de status
+    STATUS_REPROVADO = {"REP", "REC", "REPROVADO"}
+    STATUS_APROVADO = {"APR", "APROVADO", "AR", "ACC"}
+    
+    # Verifica data limite para recuperação (21/12)
+    now = datetime.now()
+    cutoff_date = datetime(now.year, 12, 21)
+    is_past_cutoff = now > cutoff_date
+
+    # Primeiro passo: coletar todos os status de cada aluno
+    aluno_status_set: dict[int, set[str]] = {}
+    
     for aluno_id, situacao in query.all():
-        situacao_upper = (situacao or "").upper()
+        if aluno_id not in aluno_status_set:
+            aluno_status_set[aluno_id] = set()
         
-        # Prioridade: APR/APROVADO > REC/REP/REPROVADO > Outros
-        situacao_atual = aluno_situacoes.get(aluno_id, "")
-        situacao_atual_upper = situacao_atual.upper()
-        
-        if situacao_upper in ["APR", "APROVADO"]:
+        if situacao:
+            aluno_status_set[aluno_id].add(situacao.upper())
+            
+    # Segundo passo: determinar status final
+    for aluno_id, status_set in aluno_status_set.items():
+        # Se tem alguma reprovação
+        if not status_set.isdisjoint(STATUS_REPROVADO):
+            if is_past_cutoff:
+                aluno_situacoes[aluno_id] = "Reprovado"
+            else:
+                aluno_situacoes[aluno_id] = "Recuperação"
+        # Se não tem reprovação, mas tem aprovação
+        elif not status_set.isdisjoint(STATUS_APROVADO):
             aluno_situacoes[aluno_id] = "Aprovado"
-        elif situacao_upper in ["REC", "REP", "REPROVADO"] and situacao_atual_upper not in ["APR", "APROVADO"]:
-            aluno_situacoes[aluno_id] = "Recuperação"
-        elif not situacao_atual:
+        else:
             aluno_situacoes[aluno_id] = "Outros"
     
     # Conta por categoria
