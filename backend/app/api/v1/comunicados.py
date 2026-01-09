@@ -36,13 +36,17 @@ def register(parent: Blueprint) -> None:
                          # Let's assume target_value matches 'turma' field for now
                          turma_slug = aluno.turma
 
-                filters = [Comunicado.target_type == "TODOS"]
+                # User requested strictly class-related messages (plus personal)
+                filters = []
                 if turma_slug:
                     filters.append((Comunicado.target_type == "TURMA") & (Comunicado.target_value == turma_slug))
                 if aluno_id:
                     filters.append((Comunicado.target_type == "ALUNO") & (Comunicado.target_value == str(aluno_id)))
                 
-                stm = select(Comunicado).where(or_(*filters)).order_by(desc(Comunicado.data_envio))
+                if not filters:
+                     stm = select(Comunicado).where(1 == 0) # No match
+                else:
+                     stm = select(Comunicado).where(or_(*filters)).order_by(desc(Comunicado.data_envio))
 
             results = session.execute(stm).scalars().all()
             return jsonify([comm.to_dict() for comm in results])

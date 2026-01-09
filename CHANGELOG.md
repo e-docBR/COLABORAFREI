@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
     - **Audit Log**: All mutations are logged for security (showing old vs new values).
     - **Auto-Calculation**: Editing trimesters automatically recalculates the total if not manually overridden.
     - **Access Control**: Strict `admin` role requirement for data modification.
+    - **Student Portal ('Meu Boletim')**: Added Tabs for specialized views:
+        - **Boletim**: Grades and absence view.
+        - **Ocorrências**: Personal disciplinary records.
+        - **Recados**: Targeted communications (filtered to show only Class or Student specific messages).
 - **Phase 5 (Advanced)**:
     - **Ocorrências Disciplinares**: Module to register warnings, compliments, and suspensions.
     - **Audit Logs**: Security tracking for critical actions (create/edit).
