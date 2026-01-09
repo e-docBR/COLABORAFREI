@@ -7,6 +7,8 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import TableViewIcon from "@mui/icons-material/TableView";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { NavLink } from "react-router-dom";
 import { useMemo } from "react";
 import { useAppSelector } from "../../app/hooks";
@@ -19,8 +21,7 @@ const staffNavItems = [
   { label: "Turmas", icon: <ClassIcon />, path: `${appBasePath}/turmas` },
   { label: "Notas", icon: <TableViewIcon />, path: `${appBasePath}/notas` },
   { label: "Gráficos", icon: <InsightsIcon />, path: `${appBasePath}/graficos` },
-  { label: "Relatórios", icon: <ArticleIcon />, path: `${appBasePath}/relatorios` },
-  { label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` }
+  { label: "Relatórios", icon: <ArticleIcon />, path: `${appBasePath}/relatorios` }
 ];
 
 const alunoNavItems = [{ label: "Meu Boletim", icon: <PeopleIcon />, path: `${appBasePath}/meu-boletim` }];
@@ -34,7 +35,20 @@ export const Sidebar = () => {
     const base = [...staffNavItems];
     if (isAdmin) {
       base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
+      base.push({ label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` });
     }
+    // Add Professor Dashboard for admin or professor
+    if (isAdmin || user?.role === "professor") {
+      base.push({ label: "Visão Professor", icon: <InsightsIcon />, path: `${appBasePath}/professor` });
+    }
+    // Add Comunicados for everyone (Staff manages, Students read - but students have different list)
+    // Actually, students have it in MeuBoletim? No, implementation plan says "Aba/Seção" there, but let's make it consistent.
+    // If student, add to their list. If staff, add to theirs.
+
+    // For staff:
+    base.splice(1, 0, { label: "Comunicados", icon: <NotificationsIcon />, path: `${appBasePath}/comunicados` });
+    base.splice(2, 0, { label: "Ocorrências", icon: <WarningAmberIcon />, path: `${appBasePath}/ocorrencias` });
+
     return base;
   }, [isAluno, isAdmin]);
   return (

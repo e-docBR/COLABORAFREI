@@ -37,3 +37,5 @@ coverage/
 /data/uploads/
 /BOLETINS FREI/
 *.db
+*.pkl
+

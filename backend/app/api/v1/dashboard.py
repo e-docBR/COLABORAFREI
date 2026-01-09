@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 
 from ...core.database import session_scope
-from ...services import build_dashboard_metrics
+from ...services import build_dashboard_metrics, build_teacher_dashboard
 
 
 def register(parent: Blueprint) -> None:
@@ -17,5 +17,12 @@ def register(parent: Blueprint) -> None:
         with session_scope() as session:
             metrics = build_dashboard_metrics(session)
         return jsonify(metrics.to_dict())
+
+    @bp.get("/dashboard/professor")
+    @jwt_required()
+    def fetch_teacher_dashboard():
+        with session_scope() as session:
+            data = build_teacher_dashboard(session)
+        return jsonify(data)
 
     parent.register_blueprint(bp)

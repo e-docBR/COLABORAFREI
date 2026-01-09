@@ -48,6 +48,26 @@ def register(parent: Blueprint) -> None:
             202,
         )
 
+    @bp.get("/uploads/jobs/<job_id>")
+    @jwt_required()
+    def get_job_status(job_id):
+        try:
+            from rq.job import Job
+            from ...core.queue import redis_conn
+            
+            job = Job.fetch(job_id, connection=redis_conn)
+            return jsonify({
+                "job_id": job.id,
+                "status": job.get_status(),
+                "result": job.result if job.is_finished else None,
+                "enqueued_at": job.enqueued_at.isoformat() if job.enqueued_at else None,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "ended_at": job.ended_at.isoformat() if job.ended_at else None,
+                "meta": job.meta
+            })
+        except Exception:
+            return jsonify({"error": "Job not found"}), 404
+
     parent.register_blueprint(bp)
 
 

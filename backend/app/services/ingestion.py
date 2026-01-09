@@ -45,19 +45,27 @@ STUDENT_META_PATTERN = re.compile(
 )
 
 
+from ..core.queue import queue
+
 def enqueue_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> str:
-    job_id = uuid4().hex
-    logger.info("Processando boletim {} para {}-{}", filepath.name, turno, turma)
-    process_pdf(filepath, turno=turno, turma=turma)
-    return job_id
+    job = queue.enqueue(process_pdf, filepath, turno=turno, turma=turma, job_timeout=600)
+    logger.info("Enqueued job {} for file {}", job.id, filepath.name)
+    return job.id
 
 
-def process_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> int:
-    records = parse_pdf(filepath, turno=turno, turma=turma)
+def process_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> dict[str, any]:
+    errors: list[str] = []
+    records = parse_pdf(filepath, errors, turno=turno, turma=turma)
+    
+    count = 0
     if not records:
-        logger.warning("Nenhum registro encontrado no boletim {}", filepath)
-        return 0
-    return apply_records(records)
+        msg = f"Nenhum registro encontrado no boletim {filepath.name}"
+        logger.warning(msg)
+        errors.append(msg)
+    else:
+        count = apply_records(records)
+    
+    return {"count": count, "logs": errors}
 
 
 def apply_records(records: Sequence[ParsedAlunoRecord]) -> int:
@@ -77,7 +85,7 @@ def apply_records(records: Sequence[ParsedAlunoRecord]) -> int:
         session.close()
 
 
-def parse_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> list[ParsedAlunoRecord]:
+def parse_pdf(filepath: Path, errors: list[str], *, turno: str | None = None, turma: str | None = None) -> list[ParsedAlunoRecord]:
     parsed: dict[str, ParsedAlunoRecord] = {}
     with pdfplumber.open(str(filepath)) as pdf:
         for page in pdf.pages:
@@ -85,13 +93,16 @@ def parse_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = N
             tables = page.extract_tables() or []
             student_metas = _extract_student_meta(text)
             if not student_metas:
-                logger.warning("Página %s sem metadados em %s", page.page_number, filepath)
+                # msg = f"Página {page.page_number} sem metadados (ignorada)."
+                # logger.warning(msg)
+                # errors.append(msg)
+                # Omit noise, only log real issues if needed
                 continue
 
             for idx, meta in enumerate(student_metas):
                 matricula = meta.get("matricula")
                 if not matricula:
-                    logger.warning("Página %s sem matrícula em %s", page.page_number, filepath)
+                    errors.append(f"Página {page.page_number}: Aluno sem matrícula ignorado.")
                     continue
 
                 registro = parsed.setdefault(

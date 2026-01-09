@@ -140,6 +140,7 @@ export type AlunoDetail = AlunoSummary & {
 
 type ListAlunosParams = {
   page?: number;
+  per_page?: number;
   q?: string;
   turno?: string;
   turma?: string;
@@ -247,7 +248,7 @@ export const api = createApi({
       return headers;
     }
   }),
-  tagTypes: ["Dashboard", "Alunos", "Notas", "Uploads", "Turmas", "Usuarios"],
+  tagTypes: ["Dashboard", "Alunos", "Notas", "Uploads", "Turmas", "Usuarios", "Comunicados", "Ocorrencias"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (body) => ({
@@ -258,6 +259,10 @@ export const api = createApi({
     }),
     getDashboardKpis: builder.query<DashboardKpis, void>({
       query: () => "/dashboard/kpis",
+      providesTags: ["Dashboard"]
+    }),
+    getTeacherDashboard: builder.query<{ distribution: Record<string, number>; alerts: any[]; classes_count: number }, void>({
+      query: () => "/dashboard/professor",
       providesTags: ["Dashboard"]
     }),
     getAluno: builder.query<AlunoDetail, number | string>({
@@ -311,6 +316,10 @@ export const api = createApi({
         url: `/graficos/${slug}`,
         params: sanitizeParams(params)
       })
+    }),
+    getJobStatus: builder.query<{ status: string; result?: any; error?: string }, string>({
+      query: (jobId) => `/uploads/jobs/${jobId}`,
+      keepUnusedDataFor: 0
     }),
     listNotas: builder.query<ListNotasResponse, ListNotasParams | void>({
       query: (params) => ({
@@ -366,6 +375,33 @@ export const api = createApi({
         method: "DELETE"
       }),
       invalidatesTags: ["Usuarios"]
+    }),
+    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string }[], void>({
+      query: () => "/comunicados",
+      providesTags: ["Comunicados"]
+    }),
+    createComunicado: builder.mutation<void, { titulo: string; conteudo: string; target_type: string; target_value?: string }>({
+      query: (body) => ({
+        url: "/comunicados",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Comunicados"]
+    }),
+    listOcorrencias: builder.query<any[], string | void>({
+      query: (aluno_id) => ({
+        url: "/ocorrencias",
+        params: aluno_id ? { aluno_id } : undefined
+      }),
+      providesTags: ["Ocorrencias"]
+    }),
+    createOcorrencia: builder.mutation<void, { aluno_id: number; tipo: string; descricao: string; data_ocorrencia?: string }>({
+      query: (body) => ({
+        url: "/ocorrencias",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Ocorrencias"]
     })
   })
 });
@@ -373,6 +409,7 @@ export const api = createApi({
 export const {
   useLoginMutation,
   useGetDashboardKpisQuery,
+  useGetTeacherDashboardQuery,
   useGetAlunoQuery,
   useListAlunosQuery,
   useListTurmasQuery,
@@ -380,6 +417,7 @@ export const {
   useUploadBoletimMutation,
   useGetRelatorioQuery,
   useGetGraficoQuery,
+  useGetJobStatusQuery,
   useListNotasQuery,
   useGetNotasFiltrosQuery,
   useChangePasswordMutation,
@@ -387,5 +425,9 @@ export const {
   useListUsuariosQuery,
   useCreateUsuarioMutation,
   useUpdateUsuarioMutation,
-  useDeleteUsuarioMutation
+  useDeleteUsuarioMutation,
+  useListComunicadosQuery,
+  useCreateComunicadoMutation,
+  useListOcorrenciasQuery,
+  useCreateOcorrenciaMutation
 } = api;

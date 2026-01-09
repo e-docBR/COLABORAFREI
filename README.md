@@ -2,7 +2,24 @@
 
 Monorepo com backend Flask e frontend React/Vite para gestão de boletins escolares.
 
-## Como rodar localmente
+## Como rodar localmente (Recomendado: Docker)
+A forma mais fácil de rodar todo o sistema (Backend, Frontend, Banco e Redis) é usando Docker.
+
+### 1) Com Docker Compose
+- **Requisitos**: Docker Engine 24+ e Docker Compose Plugin.
+- **Comando**:
+  ```bash
+  docker-compose up -d --build
+  ```
+- **Acessar**:
+  - Frontend: http://localhost:5173
+  - Backend API: http://localhost:5000
+- **Inicializar Banco**:
+  ```bash
+  docker-compose exec backend flask --app app init-db
+  ```
+
+## Como rodar localmente (Manual / Legado)
 
 ### 1) Backend (Flask)
 - Requisitos: Python 3.12+, SQLite 3.45+.

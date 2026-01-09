@@ -17,6 +17,9 @@ import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { store } from "./store";
 import { MeuBoletimPage } from "../features/alunos/MeuBoletimPage";
 import { LandingPage } from "../features/landing/LandingPage";
+import { TeacherDashboard } from "../features/dashboard/TeacherDashboard";
+import { ComunicadosPage } from "../features/comunicados/ComunicadosPage";
+import { OcorrenciasPage } from "../features/ocorrencias/OcorrenciasPage";
 
 const requireAuth = async () => {
   const state = store.getState();
@@ -65,6 +68,7 @@ export const appRouter = createBrowserRouter([
     element: <DashboardLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
+      { path: "professor", element: <TeacherDashboard /> },
       { path: "alunos", element: <AlunosPage /> },
       { path: "alunos/:alunoId", element: <AlunoDetailPage /> },
       { path: "turmas", element: <TurmasPage /> },
@@ -75,6 +79,8 @@ export const appRouter = createBrowserRouter([
       { path: "relatorios/:slug", element: <RelatorioDetailPage /> },
       { path: "uploads", element: <UploadsPage /> },
       { path: "usuarios", element: <UsuariosPage /> },
+      { path: "comunicados", element: <ComunicadosPage /> },
+      { path: "ocorrencias", element: <OcorrenciasPage /> },
       { path: "meu-boletim", element: <MeuBoletimPage /> }
     ]
   },

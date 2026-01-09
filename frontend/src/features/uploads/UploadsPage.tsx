@@ -13,9 +13,9 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
-import { useUploadBoletimMutation } from "../../lib/api";
+import { useGetJobStatusQuery, useUploadBoletimMutation } from "../../lib/api";
 
 const turnos = ["Matutino", "Vespertino", "Noturno"];
 
@@ -24,9 +24,34 @@ export const UploadsPage = () => {
   const [turno, setTurno] = useState("");
   const [turma, setTurma] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
-  const [uploadBoletim, { isLoading }] = useUploadBoletimMutation();
+  const [uploadBoletim, { isLoading: isUploading }] = useUploadBoletimMutation();
+  const { data: jobStatus } = useGetJobStatusQuery(currentJobId || "", {
+    pollingInterval: 2000,
+    skip: !currentJobId
+  });
+
+  useEffect(() => {
+    if (jobStatus) {
+      if (jobStatus.status === "finished") {
+        const { count, logs } = jobStatus.result || { count: 0, logs: [] };
+        let msg = `Concluído! ${count} registros.`;
+        if (logs && logs.length > 0) {
+          msg += ` (${logs.length} avisos - ver console)`;
+          console.warn("Logs de processamento:", logs);
+        }
+        setFeedback({ type: "success", message: msg });
+        setCurrentJobId(null);
+      } else if (jobStatus.status === "failed") {
+        setFeedback({ type: "error", message: "Erro no processamento do arquivo." });
+        setCurrentJobId(null);
+      } else {
+        setFeedback({ type: "info", message: `Processando arquivo... Status: ${jobStatus.status}` });
+      }
+    }
+  }, [jobStatus]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];
@@ -38,6 +63,7 @@ export const UploadsPage = () => {
     setTurma("");
     setFile(null);
     setFeedback(null);
+    setCurrentJobId(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -52,9 +78,10 @@ export const UploadsPage = () => {
     try {
       const response = await uploadBoletim({ file, turno, turma }).unwrap();
       setFeedback({
-        type: "success",
-        message: `Upload recebido (${response.filename}) — job #${response.job_id}`
+        type: "info",
+        message: `Upload recebido. Iniciando processamento (Job: ${response.job_id})...`
       });
+      setCurrentJobId(response.job_id);
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -68,7 +95,7 @@ export const UploadsPage = () => {
     }
   };
 
-  const canSubmit = Boolean(file && turno && turma && !isLoading);
+  const canSubmit = Boolean(file && turno && turma && !isUploading && !currentJobId);
 
   return (
     <Box display="flex" flexDirection="column" gap={3}>
@@ -77,7 +104,7 @@ export const UploadsPage = () => {
           title="Upload de boletins PDF"
           subheader="Envie arquivos por turno/turma para acionar a ingestão automática"
         />
-        {isLoading && <LinearProgress />}
+        {(isUploading || !!currentJobId) && <LinearProgress />}
         <CardContent>
           {feedback && (
             <Alert severity={feedback.type} sx={{ mb: 2 }}>
@@ -137,7 +164,7 @@ export const UploadsPage = () => {
               <Button type="submit" variant="contained" disabled={!canSubmit}>
                 Enviar para ingestão
               </Button>
-              <Button variant="outlined" onClick={resetForm} disabled={isLoading}>
+              <Button variant="outlined" onClick={resetForm} disabled={isUploading || !!currentJobId}>
                 Limpar
               </Button>
             </Stack>
