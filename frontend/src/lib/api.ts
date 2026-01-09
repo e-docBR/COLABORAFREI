@@ -328,6 +328,14 @@ export const api = createApi({
       }),
       providesTags: ["Notas"]
     }),
+    updateNota: builder.mutation<NotaResumo, { id: number; trimestre1?: number | null; trimestre2?: number | null; trimestre3?: number | null; total?: number | null; faltas?: number | null; situacao?: string | null }>({
+      query: ({ id, ...body }) => ({
+        url: `/notas/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: (result, _error, { id }) => ["Notas", { type: "Alunos", id: result?.aluno?.id }]
+    }),
     getNotasFiltros: builder.query<NotasFiltrosResponse, void>({
       query: () => "/notas/filtros",
       providesTags: ["Notas"]
@@ -419,6 +427,7 @@ export const {
   useGetGraficoQuery,
   useGetJobStatusQuery,
   useListNotasQuery,
+  useUpdateNotaMutation,
   useGetNotasFiltrosQuery,
   useChangePasswordMutation,
   useUploadPhotoMutation,

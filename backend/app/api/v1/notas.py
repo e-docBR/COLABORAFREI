@@ -1,10 +1,12 @@
 """Notas endpoints."""
+from decimal import Decimal
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt, jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy.orm import joinedload
 
 from ...core.database import session_scope
 from ...models import Aluno, Nota
+from ...services import log_action
 
 
 def serialize_nota_row(nota: Nota, aluno: Aluno | None = None) -> dict:
@@ -89,22 +91,62 @@ def register(parent: Blueprint) -> None:
     @bp.patch("/notas/<int:nota_id>")
     @jwt_required()
     def update_nota(nota_id: int):
+        claims = get_jwt()
+        roles = claims.get("roles", [])
+        if "admin" not in roles:
+             return jsonify({"error": "Acesso negado. Apenas administradores podem editar notas."}), 403
+
         payload = request.get_json() or {}
         allowed_fields = {"trimestre1", "trimestre2", "trimestre3", "total", "faltas", "situacao"}
         updates = {k: v for k, v in payload.items() if k in allowed_fields}
         if not updates:
             return jsonify({"error": "Nenhum campo válido informado"}), 400
 
+        user_id = int(get_jwt_identity())
+
         with session_scope() as session:
             nota = session.get(Nota, nota_id)
             if not nota:
                 return jsonify({"error": "Nota não encontrada"}), 404
+            
+            # Capture old state for audit
+            old_values = {}
+            for k in updates.keys():
+                val = getattr(nota, k)
+                if isinstance(val, Decimal):
+                    val = float(val)
+                old_values[k] = val
+            
+            # Apply updates
             for key, value in updates.items():
                 setattr(nota, key, value)
+            
+            # Auto-calculate total if not explicitly provided and trimesters changed
+            if "total" not in updates:
+                # If any trimester was updated, re-sum
+                if any(k in updates for k in ["trimestre1", "trimestre2", "trimestre3"]):
+                    t1 = float(nota.trimestre1) if nota.trimestre1 is not None else 0.0
+                    t2 = float(nota.trimestre2) if nota.trimestre2 is not None else 0.0
+                    t3 = float(nota.trimestre3) if nota.trimestre3 is not None else 0.0
+                    # Only sum if at least one is present? Or treat None as 0? 
+                    # Let's treat None as 0 for sum purposes, but if all are None, total might be None?
+                    # Current logic: Sum distinct values.
+                    nota.total = t1 + t2 + t3
+
             session.add(nota)
             session.flush()
-            session.refresh(nota)
+            
+            # Log action
+            log_action(
+                session,
+                user_id,
+                "UPDATE",
+                "Nota",
+                nota.id,
+                {"old": old_values, "new": updates}
+            )
 
-        return jsonify(serialize_nota_row(nota))
+            session.refresh(nota)
+            return jsonify(serialize_nota_row(nota))
 
     parent.register_blueprint(bp)

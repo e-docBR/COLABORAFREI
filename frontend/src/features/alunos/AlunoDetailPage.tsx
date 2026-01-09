@@ -21,7 +21,12 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
-import { useGetAlunoQuery } from "../../lib/api";
+import EditIcon from "@mui/icons-material/Edit";
+import { IconButton } from "@mui/material";
+import { useState } from "react";
+import { useGetAlunoQuery, AlunoNota } from "../../lib/api";
+import { useAppSelector } from "../../app/hooks";
+import { EditNotaDialog } from "../notas/EditNotaDialog";
 
 const formatSituacao = (value?: string | null) => {
   if (!value) return { label: "-", color: "default" as const };
@@ -42,6 +47,11 @@ export const AlunoDetailPage = () => {
   const { data, isLoading, isError } = useGetAlunoQuery(alunoId ?? "", {
     skip: !alunoId
   });
+
+  const user = useAppSelector((state) => state.auth.user);
+  const isAdmin = user?.role === "admin";
+
+  const [editingNota, setEditingNota] = useState<AlunoNota | null>(null);
 
   if (isLoading) {
     return (
@@ -112,6 +122,7 @@ export const AlunoDetailPage = () => {
               <TableCell>Total</TableCell>
               <TableCell>Faltas</TableCell>
               <TableCell>Situação</TableCell>
+              {isAdmin && <TableCell>Ações</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -128,12 +139,27 @@ export const AlunoDetailPage = () => {
                   <TableCell>
                     <Chip label={situacao.label} color={situacao.color} size="small" variant="outlined" />
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <IconButton size="small" onClick={() => setEditingNota(nota)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {editingNota && (
+        <EditNotaDialog
+          open={Boolean(editingNota)}
+          nota={editingNota}
+          onClose={() => setEditingNota(null)}
+        />
+      )}
     </Stack>
   );
 };

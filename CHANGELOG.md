@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Phase 6 (Data Corrections)**:
+    - **Grade Editing**: Admins can now manually edit grades, absences, and status via the Student Details page.
+    - **Audit Log**: All mutations are logged for security (showing old vs new values).
+    - **Auto-Calculation**: Editing trimesters automatically recalculates the total if not manually overridden.
+    - **Access Control**: Strict `admin` role requirement for data modification.
 - **Phase 5 (Advanced)**:
     - **Ocorrências Disciplinares**: Module to register warnings, compliments, and suspensions.
     - **Audit Logs**: Security tracking for critical actions (create/edit).
