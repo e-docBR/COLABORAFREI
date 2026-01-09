@@ -24,8 +24,11 @@ import { useGetTurmaAlunosQuery } from "../../lib/api";
 
 const formatSituacao = (situacao?: string | null) => {
   if (!situacao) return { label: "Sem status", color: "default" as const };
-  if (situacao.toUpperCase().startsWith("APR") || situacao.toUpperCase() === "AR") {
+  if (situacao.toUpperCase().startsWith("APR")) {
     return { label: "Aprovado", color: "success" as const };
+  }
+  if (situacao.toUpperCase() === "AR") {
+    return { label: "Apr Rec", color: "success" as const };
   }
   if (situacao.toUpperCase().startsWith("REP")) {
     return { label: "Reprovado", color: "error" as const };
@@ -110,6 +113,7 @@ export const TurmaDetailPage = () => {
                           label={`${nota.disciplina}: ${nota.total ?? "-"}`}
                           variant="outlined"
                           size="small"
+                          color={typeof nota.total === 'number' && nota.total < 50 ? "error" : "default"}
                         />
                       ))}
                     </Stack>

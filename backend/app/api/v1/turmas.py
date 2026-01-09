@@ -145,6 +145,9 @@ def _calcular_situacao(notas: list[dict[str, str | float | int | None]]) -> str 
     if any(sit == "ACC" for sit in situacoes):
         return "APCC"
 
+    if any(sit == "AR" for sit in situacoes):
+        return "AR"
+
     return "APR"
 
 
