@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Ocorrências System Improvements**:
+    - Fixed pagination issue in `api/v1/alunos` ensuring all students appear in the selection dropdown.
+    - Added database migration for `ocorrencias` table.
+    - Resolved `redis` dependency missing in backend environment.
+
+### Added
 - **Phase 6 (Data Corrections)**:
     - **Grade Editing**: Admins can now manually edit grades, absences, and status via the Student Details page.
     - **Audit Log**: All mutations are logged for security (showing old vs new values).

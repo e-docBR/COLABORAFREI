@@ -113,9 +113,9 @@ export const RelatorioDetailPage = () => {
 
   const queryArgs = slug
     ? {
-        slug,
-        ...sanitizedFilters
-      }
+      slug,
+      ...sanitizedFilters
+    }
     : undefined;
 
   const { data, isLoading, isError, isFetching } = useGetRelatorioQuery(queryArgs ?? { slug: "" }, {
@@ -279,45 +279,154 @@ export const RelatorioDetailPage = () => {
         </Card>
       )}
 
-      <TableContainer component={Card}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              {definition.columns.map((column) => (
-                <TableCell key={column.key} align={column.align}>
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {!hasRows && !isFetching ? (
-              <TableRow>
-                <TableCell colSpan={definition.columns.length} align="center">
-                  <Typography color="text.secondary">Nenhum dado disponível.</Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, index) => (
-                <TableRow key={`${definition.slug}-${index}`} hover>
-                  {definition.columns.map((column) => (
-                    <TableCell key={column.key} align={column.align}>
-                      {column.render(row)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-            {isFetching && (
-              <TableRow>
-                <TableCell colSpan={definition.columns.length} align="center">
-                  <CircularProgress size={24} />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Card>
+        <CardContent sx={{ minHeight: 400 }}>
+          {!definition.type || definition.type === "table" ? (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    {definition.columns.map((column) => (
+                      <TableCell key={column.key} align={column.align}>
+                        {column.label}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {!hasRows && !isFetching ? (
+                    <TableRow>
+                      <TableCell colSpan={definition.columns.length} align="center">
+                        <Typography color="text.secondary">Nenhum dado disponível.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((row, index) => (
+                      <TableRow key={`${definition.slug}-${index}`} hover>
+                        {definition.columns.map((column) => (
+                          <TableCell key={column.key} align={column.align}>
+                            {column.render(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                  {isFetching && (
+                    <TableRow>
+                      <TableCell colSpan={definition.columns.length} align="center">
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : definition.type === "heatmap" ? (
+            <HeatmapVisual data={rows} />
+          ) : definition.type === "scatter" ? (
+            <ScatterVisual data={rows} />
+          ) : definition.type === "radar" ? (
+            <RadarVisual data={rows} />
+          ) : null}
+        </CardContent>
+      </Card>
     </Stack>
+  );
+};
+
+// --- Visualization Components ---
+import {
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  ZAxis,
+  Tooltip,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend
+} from "recharts";
+
+const HeatmapVisual = ({ data }: { data: any[] }) => {
+  // Map strings to numbers for axis
+  const turmas = Array.from(new Set(data.map(d => d.turma))).sort();
+  const disciplinas = Array.from(new Set(data.map(d => d.disciplina))).sort();
+
+  const chartData = data.map(d => ({
+    ...d,
+    x: turmas.indexOf(d.turma),
+    y: disciplinas.indexOf(d.disciplina),
+    z: d.media
+  }));
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const d = payload[0].payload;
+      return (
+        <Card sx={{ p: 1, boxShadow: 3 }}>
+          <Typography variant="subtitle2">{d.turma} - {d.disciplina}</Typography>
+          <Typography variant="body2">Média: {d.media}</Typography>
+        </Card>
+      );
+    }
+    return null;
+  };
+
+  // Custom Shape for colored squares
+  const renderShape = (props: any) => {
+    const { cx, cy, payload } = props;
+    const size = 30;
+    // Color scale: Red < 60, Yellow < 80, Green >= 80
+    let fill = "#81c784";
+    if (payload.media < 60) fill = "#e57373";
+    else if (payload.media < 80) fill = "#fff176";
+
+    return <rect x={cx - size / 2} y={cy - size / 2} width={size} height={size} fill={fill} stroke="#ccc" />;
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height={500}>
+      <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 100 }}>
+        <XAxis type="number" dataKey="x" name="turma" tickFormatter={i => turmas[i]} domain={[0, turmas.length - 1]} tickCount={turmas.length} />
+        <YAxis type="number" dataKey="y" name="disciplina" tickFormatter={i => disciplinas[i]} domain={[0, disciplinas.length - 1]} tickCount={disciplinas.length} width={100} />
+        <ZAxis type="number" dataKey="z" range={[0, 100]} />
+        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+        <Scatter data={chartData} shape={renderShape} />
+      </ScatterChart>
+    </ResponsiveContainer>
+  );
+};
+
+const ScatterVisual = ({ data }: { data: any[] }) => (
+  <ResponsiveContainer width="100%" height={400}>
+    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+      <XAxis type="number" dataKey="faltas" name="Faltas" unit="" />
+      <YAxis type="number" dataKey="media" name="Média" unit="" domain={[0, 100]} />
+      <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+      <Legend />
+      <Scatter name="Alunos" data={data} fill="#8884d8" shape="circle" />
+    </ScatterChart>
+  </ResponsiveContainer>
+);
+
+const RadarVisual = ({ data }: { data: any[] }) => {
+  // Recharts Radar needs uniform metric scale. 
+  // Assiduity is 0-100, Media is 0-100.
+  return (
+    <ResponsiveContainer width="100%" height={500}>
+      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+        <PolarGrid />
+        <PolarAngleAxis dataKey="subject" />
+        <PolarRadiusAxis angle={30} domain={[0, 100]} />
+        <Radar name="Média Geral" dataKey="Média Geral" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+        <Radar name="Assiduidade" dataKey="Assiduidade" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
+        <Legend />
+        <Tooltip />
+      </RadarChart>
+    </ResponsiveContainer>
   );
 };

@@ -59,7 +59,18 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
         alunos_em_risco=alunos_em_risco,
     )
 
-def build_teacher_dashboard(session: Session) -> dict[str, any]:
+def build_teacher_dashboard(session: Session, query: str | None = None, turno: str | None = None, turma: str | None = None) -> dict[str, any]:
+    # Base filter builder
+    def apply_filters(stm):
+        if turno and turno != 'Todos':
+            stm = stm.where(Aluno.turno == turno)
+        if turma and turma != 'Todas':
+            stm = stm.where(Aluno.turma == turma)
+        if query:
+            term = f"%{query}%"
+            stm = stm.where(Aluno.nome.ilike(term) | Aluno.matricula.ilike(term))
+        return stm
+
     # 1. Grade Distribution
     # Intervals: 0-20, 20-40, 40-60, 60-80, 80-100
     queries = [
@@ -67,22 +78,30 @@ def build_teacher_dashboard(session: Session) -> dict[str, any]:
     ]
     dist = {}
     for start, end in queries:
-        count = session.execute(
-            select(func.count(Nota.id)).where(Nota.total >= start, Nota.total < end)
-        ).scalar_one()
+        stm = select(func.count(Nota.id)).join(Aluno).where(Nota.total >= start, Nota.total < end)
+        stm = apply_filters(stm)
+        
+        count = session.execute(stm).scalar_one()
         label = f"{start}-{end}" if end <= 80 else f"{start}-100"
         dist[label] = count
 
     # 2. Risk Alerts (Simulated AI or Heuristic)
     # Fetch top 10 risky students based on grades < 60
-    risky_students = session.execute(
-        select(Aluno, func.avg(Nota.total).label("media"))
-        .join(Nota)
-        .group_by(Aluno.id)
-        .having(func.avg(Nota.total) < 60)
-        .order_by("media")
+    base_stm = select(Aluno, func.avg(Nota.total).label("media")) \
+        .join(Nota) \
+        .group_by(Aluno.id) \
+        .having(func.avg(Nota.total) < 60) \
+        .order_by("media") \
         .limit(10)
-    ).all()
+    
+    # We can't easily apply WHERE after GROUP BY/HAVING in this structure without subqueries or careful ordering.
+    # Instead, we apply filters to the JOIN source.
+    # Re-writing query:
+    stm_risk = select(Aluno, func.avg(Nota.total).label("media")).join(Nota)
+    stm_risk = apply_filters(stm_risk)
+    stm_risk = stm_risk.group_by(Aluno.id).having(func.avg(Nota.total) < 60).order_by("media").limit(10)
+
+    risky_students = session.execute(stm_risk).all()
     
     alerts = []
     # Import locally to avoid circular dependencies if any
@@ -101,8 +120,19 @@ def build_teacher_dashboard(session: Session) -> dict[str, any]:
             "risk_score": score
         })
 
+    # 3. Classes Count
+    stm_classes = select(func.count(func.distinct(Aluno.turma)))
+    # If filtering by Aluno properties, we just query from Aluno
+    stm_classes_src = select(func.count(func.distinct(Aluno.turma)))
+    # apply_filters expects a statement that has Aluno. 
+    # Let's fix apply_filters usage or create a fresh one.
+    stm_c = select(func.count(func.distinct(Aluno.turma)))
+    stm_c = apply_filters(stm_c)
+    
+    classes_count = session.execute(stm_c).scalar_one()
+
     return {
         "distribution": dist,
         "alerts": alerts,
-        "classes_count": session.execute(select(func.count(func.distinct(Aluno.turma)))).scalar_one()
+        "classes_count": classes_count
     }

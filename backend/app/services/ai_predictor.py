@@ -7,7 +7,7 @@ from pathlib import Path
 from ..models import Aluno, Nota
 from ..core.database import SessionLocal
 
-MODEL_PATH = Path("/data/risk_model.pkl")
+MODEL_PATH = Path(__file__).resolve().parents[3] / "data" / "risk_model.pkl"
 
 def train_risk_model():
     """

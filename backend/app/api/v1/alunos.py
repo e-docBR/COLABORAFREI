@@ -42,7 +42,7 @@ def register(parent: Blueprint) -> None:
         if "aluno" in (get_jwt().get("roles") or []):
             return jsonify({"error": "Acesso restrito"}), 403
         page = max(1, int(request.args.get("page", 1)))
-        per_page = min(100, int(request.args.get("per_page", 20)))
+        per_page = min(10000, int(request.args.get("per_page", 20)))
         turno = request.args.get("turno")
         turma = request.args.get("turma")
         query_text = request.args.get("q")

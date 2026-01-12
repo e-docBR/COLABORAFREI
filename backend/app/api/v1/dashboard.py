@@ -1,5 +1,5 @@
 """Dashboard analytics endpoints."""
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt, jwt_required
 
 from ...core.database import session_scope
@@ -21,8 +21,11 @@ def register(parent: Blueprint) -> None:
     @bp.get("/dashboard/professor")
     @jwt_required()
     def fetch_teacher_dashboard():
+        query = request.args.get("q")
+        turno = request.args.get("turno")
+        turma = request.args.get("turma")
         with session_scope() as session:
-            data = build_teacher_dashboard(session)
+            data = build_teacher_dashboard(session, query, turno, turma)
         return jsonify(data)
 
     parent.register_blueprint(bp)

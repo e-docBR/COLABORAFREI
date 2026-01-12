@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Alert,
     Box,
@@ -10,13 +11,34 @@ import {
     ListItem,
     ListItemText,
     Typography,
-    Chip
+    Chip,
+    TextField,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
+    InputAdornment
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useGetTeacherDashboardQuery } from "../../lib/api";
+import { useGetTeacherDashboardQuery, useListTurmasQuery } from "../../lib/api";
 
 export const TeacherDashboard = () => {
-    const { data, isLoading, error } = useGetTeacherDashboardQuery();
+    const [filters, setFilters] = useState({ q: "", turno: "Todos", turma: "Todas" });
+
+    // Convert "Todos"/"Todas" to empty string for API
+    const apiFilters = {
+        q: filters.q,
+        turno: filters.turno === "Todos" ? undefined : filters.turno,
+        turma: filters.turma === "Todas" ? undefined : filters.turma
+    };
+
+    const { data, isLoading, error } = useGetTeacherDashboardQuery(apiFilters);
+    const { data: turmasData } = useListTurmasQuery();
+
+    const handleFilterChange = (field: string, value: string) => {
+        setFilters(prev => ({ ...prev, [field]: value }));
+    };
 
     if (isLoading) {
         return (
@@ -37,11 +59,71 @@ export const TeacherDashboard = () => {
         count: value
     }));
 
+    const uniqueTurmas = turmasData?.items.map(t => t.turma) || [];
+
     return (
         <Box>
             <Typography variant="h4" fontWeight={700} mb={3}>
                 Visão do Professor
             </Typography>
+
+            {/* Filters */}
+            <Box mb={4} display="flex" gap={2} flexWrap="wrap" alignItems="center" sx={{ backgroundColor: "#F9FAFB", p: 2, borderRadius: 2 }}>
+                <TextField
+                    placeholder="Nome ou matrícula"
+                    variant="outlined"
+                    size="small"
+                    value={filters.q}
+                    onChange={(e) => handleFilterChange("q", e.target.value)}
+                    sx={{
+                        flexGrow: 1,
+                        minWidth: "200px",
+                        backgroundColor: "white",
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '20px',
+                        }
+                    }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+
+                <FormControl size="small" sx={{ minWidth: 150, backgroundColor: "white", borderRadius: '20px', '& .MuiOutlinedInput-root': { borderRadius: '20px' } }}>
+                    <InputLabel id="turno-label">Turno</InputLabel>
+                    <Select
+                        labelId="turno-label"
+                        value={filters.turno}
+                        label="Turno"
+                        onChange={(e) => handleFilterChange("turno", e.target.value)}
+                    >
+                        <MenuItem value="Todos">Todos</MenuItem>
+                        <MenuItem value="Manhã">Manhã</MenuItem>
+                        <MenuItem value="Tarde">Tarde</MenuItem>
+                        <MenuItem value="Integral">Integral</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 150, backgroundColor: "white", borderRadius: '20px', '& .MuiOutlinedInput-root': { borderRadius: '20px' } }}>
+                    <InputLabel id="turma-label">Turma</InputLabel>
+                    <Select
+                        labelId="turma-label"
+                        value={filters.turma}
+                        label="Turma"
+                        onChange={(e) => handleFilterChange("turma", e.target.value)}
+                    >
+                        <MenuItem value="Todas">Todas</MenuItem>
+                        {uniqueTurmas.map((turma) => (
+                            <MenuItem key={turma} value={turma}>
+                                {turma}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Box>
 
             <Grid container spacing={3}>
                 {/* Stats */}
@@ -59,7 +141,7 @@ export const TeacherDashboard = () => {
                 {/* Grade Distribution */}
                 <Grid item xs={12} md={8}>
                     <Card sx={{ height: 400 }}>
-                        <CardHeader title="Distribuição de Notas" subheader="Visão geral de todas as turmas" />
+                        <CardHeader title="Distribuição de Notas" subheader="Visão geral (filtrada)" />
                         <CardContent sx={{ height: 320 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData}>

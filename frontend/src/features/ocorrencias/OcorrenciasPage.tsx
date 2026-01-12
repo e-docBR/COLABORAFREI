@@ -26,6 +26,7 @@ import {
     Typography,
     Autocomplete,
     IconButton,
+    InputAdornment,
     Menu,
     MenuItem as MuiMenuItem,
     ListItemIcon,
@@ -36,6 +37,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import SearchIcon from "@mui/icons-material/Search";
 import {
     useCreateOcorrenciaMutation,
     useListOcorrenciasQuery,
@@ -73,6 +75,8 @@ export const OcorrenciasPage = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [menuOcorrencia, setMenuOcorrencia] = useState<any | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState("");
+
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, ocorrencia: any) => {
         setAnchorEl(event.currentTarget);
         setMenuOcorrencia(ocorrencia);
@@ -82,6 +86,16 @@ export const OcorrenciasPage = () => {
         setAnchorEl(null);
         setMenuOcorrencia(null);
     };
+
+    const filteredOcorrencias = ocorrencias?.filter((oc) => {
+        if (!searchTerm) return true;
+        const lowTerm = searchTerm.toLowerCase();
+        return (
+            oc.aluno_nome?.toLowerCase().includes(lowTerm) ||
+            oc.descricao?.toLowerCase().includes(lowTerm) ||
+            oc.tipo?.toLowerCase().includes(lowTerm)
+        );
+    }) || [];
 
     const handleSave = async () => {
         if (!alunoId) return;
@@ -158,6 +172,25 @@ export const OcorrenciasPage = () => {
                 )}
             </Stack>
 
+            <Box mb={3}>
+                <TextField
+                    placeholder="Buscar por aluno, tipo ou descrição..."
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                            </InputAdornment>
+                        ),
+                        sx: { backgroundColor: "background.paper", borderRadius: 2 }
+                    }}
+                />
+            </Box>
+
             {isLoading ? (
                 <CircularProgress />
             ) : (
@@ -174,7 +207,7 @@ export const OcorrenciasPage = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {ocorrencias?.map((oc) => (
+                            {filteredOcorrencias.map((oc) => (
                                 <TableRow key={oc.id}>
                                     <TableCell>{new Date(oc.data_ocorrencia).toLocaleDateString()}</TableCell>
                                     <TableCell>{oc.aluno_nome}</TableCell>
@@ -197,10 +230,10 @@ export const OcorrenciasPage = () => {
                                     )}
                                 </TableRow>
                             ))}
-                            {ocorrencias?.length === 0 && (
+                            {filteredOcorrencias.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center">
-                                        Nenhuma ocorrência registrada.
+                                    <TableCell colSpan={6} align="center">
+                                        Nenhuma ocorrência encontrada.
                                     </TableCell>
                                 </TableRow>
                             )}

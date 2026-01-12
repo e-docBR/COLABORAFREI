@@ -261,8 +261,11 @@ export const api = createApi({
       query: () => "/dashboard/kpis",
       providesTags: ["Dashboard"]
     }),
-    getTeacherDashboard: builder.query<{ distribution: Record<string, number>; alerts: any[]; classes_count: number }, void>({
-      query: () => "/dashboard/professor",
+    getTeacherDashboard: builder.query<{ distribution: Record<string, number>; alerts: any[]; classes_count: number }, { q?: string; turno?: string; turma?: string } | void>({
+      query: (params) => ({
+        url: "/dashboard/professor",
+        params: sanitizeParams(params ?? undefined)
+      }),
       providesTags: ["Dashboard"]
     }),
     getAluno: builder.query<AlunoDetail, number | string>({

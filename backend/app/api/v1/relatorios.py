@@ -164,12 +164,125 @@ def build_melhores_alunos(
     ]
 
 
+
+
+
+def build_performance_heatmap(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
+    query = session.query(
+        Nota.disciplina,
+        Aluno.turma,
+        func.avg(Nota.total).label("media"),
+    ).join(Aluno)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
+    results = query.group_by(Nota.disciplina, Aluno.turma).all()
+    
+    # Normalize discipline names
+    normalizacao = {
+        "ARTES": "ARTE",
+        "INGLÊS": "LÍNGUA INGLESA",
+        "INGLES": "LÍNGUA INGLESA",
+        "LÍNGUA PORTUGUÊSA": "LÍNGUA PORTUGUESA",
+        "LINGUA PORTUGUESA": "LÍNGUA PORTUGUESA",
+    }
+    
+    processed = []
+    for r in results:
+        disc = r.disciplina.upper() if r.disciplina else "N/A"
+        disc = normalizacao.get(disc, disc)
+        processed.append({
+            "disciplina": disc,
+            "turma": r.turma,
+            "media": round(float(r.media or 0), 1)
+        })
+        
+    return processed
+
+
+def build_attendance_grade_correlation(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
+    query = session.query(
+        Aluno.turma,
+        func.sum(Nota.faltas).label("total_faltas"),
+        func.avg(Nota.total).label("media_geral"),
+        func.count(Nota.id).label("count_notas") # heuristic for student size equivalent
+    ).join(Nota)
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
+    # Group by Student hiddenly? No, let's group by Student for Scatter plot dots
+    
+    # Actually, scatter plot usually involves individual data points. 
+    # Let's group by Aluno.id
+    query_student = session.query(
+        Aluno.nome,
+        Aluno.turma,
+        func.sum(Nota.faltas).label("total_faltas"),
+        func.avg(Nota.total).label("media_geral")
+    ).join(Nota).group_by(Aluno.id, Aluno.nome, Aluno.turma)
+    
+    query_student = _apply_aluno_filters(query_student, turno, serie, turma, disciplina)
+    
+    results = query_student.having(func.avg(Nota.total) > 0).limit(300).all()
+    
+    return [
+        {
+            "name": r.nome,
+            "turma": r.turma,
+            "faltas": int(r.total_faltas or 0),
+            "media": round(float(r.media_geral or 0), 1)
+        }
+        for r in results
+    ]
+
+
+def build_class_radar(
+    session,
+    turno: str | None = None,
+    serie: str | None = None,
+    turma: str | None = None,
+    disciplina: str | None = None,
+):
+    # Radar comparing Classes
+    # Metrics: Media Geral, Taxa Frequencia (100 - (sum(faltas)/students*?)), let's just use Inverse Faltas or normalized
+    # Let's use: Media Geral, Media Portugues, Media Matematica, Assiduidade (100 - avg_faltas/2 approx)
+    
+    query = session.query(
+        Aluno.turma,
+        func.avg(Nota.total).label("media_geral"),
+        func.avg(Nota.faltas).label("media_faltas")
+    ).join(Nota)
+    
+    query = _apply_aluno_filters(query, turno, serie, turma, disciplina)
+    results = query.group_by(Aluno.turma).limit(8).all()
+    
+    return [
+        {
+            "subject": r.turma, # Recharts Radar uses 'subject' or 'angleKey'
+            "Média Geral": round(float(r.media_geral or 0), 1),
+            "Assiduidade": max(0, 100 - (float(r.media_faltas or 0) * 2)) # Heuristic: 1 absence ~ -2% assiduity
+        }
+        for r in results
+    ]
+
+
 REPORT_BUILDERS = {
     "turmas-mais-faltas": build_turmas_mais_faltas,
     "melhores-medias": build_melhores_medias,
     "alunos-em-risco": build_alunos_em_risco,
     "disciplinas-notas-baixas": build_disciplinas_notas_baixas,
     "melhores-alunos": build_melhores_alunos,
+    "performance-heatmap": build_performance_heatmap,
+    "attendance-correlation": build_attendance_grade_correlation,
+    "class-radar": build_class_radar,
 }
 
 
