@@ -16,7 +16,13 @@ All notable changes to this project will be documented in this file.
 - **Phase 5 (Advanced)**:
     - **Ocorrências Disciplinares**: Module to register warnings, compliments, and suspensions.
     - **Audit Logs**: Security tracking for critical actions (create/edit).
-    - **Data Chatbot**: AI-powered assistant with **new interactive Floating Widget** for natural language queries.
+    - **Advanced AI Analyst**:
+        - **Rich Visual Responses**: Chat now renders **Interactive Charts** (Bar) and **Data Tables** directly in the conversation flow.
+        - **New Analytical Intents**:
+            - *"Hardest Subjects"*: Identifies disciplines with lowest averages.
+            - *"Status Distribution"*: Visual breakdown of APR/REP/REC.
+            - *"Best Students"*: Top performing students ranking.
+            - *"Performance Analysis"*: Lists students above/below global average.
     - **Teacher Dashboard**: Analytics view for teachers (grade distribution, risk alerts).
     - **Risk Engine**: Machine Learning model (Logistic Regression) to predict student failure risk.
 - **Phase 6 (Data Corrections & Admin)**:

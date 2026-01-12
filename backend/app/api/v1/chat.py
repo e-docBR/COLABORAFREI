@@ -14,7 +14,9 @@ def register(parent: Blueprint) -> None:
         if not message:
             return jsonify({"error": "Mensagem vazia"}), 400
         
-        response_text = process_chat_message(message)
-        return jsonify({"response": response_text})
+        response_data = process_chat_message(message)
+        # response_data is a dict with text, type, data, etc.
+        # Ensure we return valid JSON
+        return jsonify(response_data)
 
     parent.register_blueprint(bp)

@@ -10,17 +10,35 @@ import {
     InputAdornment,
     CircularProgress,
     Collapse,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
 } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useChatMutation } from "../../lib/api";
+
+type ChartConfig = {
+    type: string;
+    xKey: string;
+    yKey: string;
+    color: string;
+    title: string;
+};
 
 type Message = {
     id: string;
     text: string;
     sender: "user" | "bot";
     timestamp: Date;
+    type?: "text" | "table" | "chart";
+    data?: any;
+    chart_config?: ChartConfig;
 };
 
 export const ChatWidget = () => {
@@ -28,9 +46,10 @@ export const ChatWidget = () => {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "welcome",
-            text: "Olá! Sou a IA do Colégio Frei Ronaldo. Posso ajudar com dúvidas sobre dados, como 'quantos alunos temos?' ou 'quem está em risco?'.",
+            text: "Olá! Sou o Assistente IA Analítico. Posso gerar gráficos, análises de risco e relatórios. Tente: 'Gráfico de notas do 6A' ou 'Quem está em risco?'.",
             sender: "bot",
             timestamp: new Date(),
+            type: "text"
         },
     ]);
     const [inputValue, setInputValue] = useState("");
@@ -48,26 +67,33 @@ export const ChatWidget = () => {
             text: inputValue,
             sender: "user",
             timestamp: new Date(),
+            type: "text"
         };
 
         setMessages((prev) => [...prev, userMsg]);
         setInputValue("");
 
         try {
-            const { response } = await sendMessage({ message: userMsg.text }).unwrap();
+            // @ts-ignore - response structure updated in backend
+            const responseData = await sendMessage({ message: userMsg.text }).unwrap();
+
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: response,
+                text: responseData.text,
                 sender: "bot",
                 timestamp: new Date(),
+                type: responseData.type as any,
+                data: responseData.data,
+                chart_config: responseData.chart_config
             };
             setMessages((prev) => [...prev, botMsg]);
         } catch (error) {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: "Desculpe, tive um problema ao processar sua mensagem. Tente novamente.",
+                text: "Desculpe, tive um problema ao processar sua solicitação complexa.",
                 sender: "bot",
                 timestamp: new Date(),
+                type: "text"
             };
             setMessages((prev) => [...prev, errorMsg]);
         }
@@ -85,6 +111,49 @@ export const ChatWidget = () => {
         }
     }, [messages, isOpen]);
 
+    const renderContent = (msg: Message) => {
+        if (msg.type === "chart" && msg.data && msg.chart_config) {
+            return (
+                <Box sx={{ width: "100%", height: 200, mt: 1 }}>
+                    <Typography variant="caption" fontWeight={600} mb={1} display="block">{msg.chart_config.title}</Typography>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={msg.data}>
+                            <XAxis dataKey={msg.chart_config.xKey} hide />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey={msg.chart_config.yKey} fill={msg.chart_config.color} radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </Box>
+            );
+        }
+
+        if (msg.type === "table" && msg.data && Array.isArray(msg.data)) {
+            if (msg.data.length === 0) return null;
+            const headers = Object.keys(msg.data[0]);
+            return (
+                <TableContainer component={Paper} elevation={0} sx={{ mt: 1, maxHeight: 200, bgcolor: "transparent" }}>
+                    <Table size="small" stickyHeader>
+                        <TableHead>
+                            <TableRow>
+                                {headers.map(h => <TableCell key={h} sx={{ fontWeight: 600, fontSize: "0.7rem", py: 0.5 }}>{h}</TableCell>)}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {msg.data.map((row, i) => (
+                                <TableRow key={i}>
+                                    {headers.map(h => <TableCell key={h} sx={{ fontSize: "0.7rem", py: 0.5 }}>{row[h]}</TableCell>)}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            );
+        }
+
+        return null;
+    };
+
     return (
         <Box
             sx={{
@@ -101,8 +170,8 @@ export const ChatWidget = () => {
                 <Paper
                     elevation={6}
                     sx={{
-                        width: 350,
-                        height: 450,
+                        width: 400, // Wider for charts
+                        height: 550, // Taller
                         mb: 2,
                         display: "flex",
                         flexDirection: "column",
@@ -126,7 +195,7 @@ export const ChatWidget = () => {
                         <Box display="flex" alignItems="center" gap={1}>
                             <SmartToyIcon fontSize="small" />
                             <Typography variant="subtitle1" fontWeight={600}>
-                                Data Chat
+                                AI Analyst
                             </Typography>
                         </Box>
                         <IconButton size="small" onClick={handleToggle} sx={{ color: "white" }}>
@@ -151,21 +220,27 @@ export const ChatWidget = () => {
                                 key={msg.id}
                                 sx={{
                                     alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                                    maxWidth: "85%",
+                                    maxWidth: msg.type === "chart" || msg.type === "table" ? "95%" : "85%",
+                                    width: msg.type === "chart" || msg.type === "table" ? "100%" : "auto"
                                 }}
                             >
                                 <Paper
                                     elevation={0}
                                     sx={{
                                         p: 1.5,
-                                        bgcolor: msg.sender === "user" ? "primary.light" : "grey.200",
+                                        bgcolor: msg.sender === "user" ? "primary.light" : "white",
                                         color: msg.sender === "user" ? "primary.contrastText" : "text.primary",
                                         borderRadius: 2,
+                                        border: msg.sender === "bot" ? "1px solid #eee" : "none",
                                         borderTopRightRadius: msg.sender === "user" ? 0 : 2,
                                         borderTopLeftRadius: msg.sender === "bot" ? 0 : 2,
                                     }}
                                 >
-                                    <Typography variant="body2">{msg.text}</Typography>
+                                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>{msg.text}</Typography>
+
+                                    {/* Dynamic Content Renderer */}
+                                    {renderContent(msg)}
+
                                 </Paper>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5, textAlign: msg.sender === "user" ? "right" : "left", fontSize: "0.7rem" }}>
                                     {msg.sender === "bot" ? "IA" : "Você"}
@@ -180,7 +255,7 @@ export const ChatWidget = () => {
                         <TextField
                             fullWidth
                             size="small"
-                            placeholder="Pergunte algo sobre os dados..."
+                            placeholder="Peça gráficos, relatórios ou insights..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyPress}
