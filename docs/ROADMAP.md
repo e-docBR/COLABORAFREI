@@ -19,10 +19,10 @@ Este documento descreve o plano de continuidade para o desenvolvimento do sistem
 
 ### 1. Implementação do Data Chatbot (Frontend)
 **Objetivo:** Permitir que coordenadores e direção façam perguntas em linguagem natural sobre os dados da escola.
-- [ ] Criar componente `ChatInterface` (janela flutuante ou página dedicada).
-- [ ] Integrar com endpoint de IA do backend (serviço `ai_chat.py`).
-- [ ] Adicionar botão de acesso rápido no Header ou Sidebar.
-- [ ] Implementar visualização de respostas (texto, tabelas simples).
+- [x] Criar componente `ChatInterface` (janela flutuante ou página dedicada).
+- [x] Integrar com endpoint de IA do backend (serviço `ai_chat.py`).
+- [x] Adicionar botão de acesso rápido no Header ou Sidebar.
+- [x] Implementar visualização de respostas (texto, tabelas simples).
 
 ### 2. Validação e Ajustes do Modelo de Risco
 **Objetivo:** Garantir que a predição de risco (`ai_predictor.py`) esteja visível e útil.
@@ -38,7 +38,7 @@ Este documento descreve o plano de continuidade para o desenvolvimento do sistem
 
 ### 4. Auditoria e Segurança (Fase 6)
 **Objetivo:** Ferramentas para administração segura.
-- [ ] Criar visualização de logs de auditoria no frontend (quem alterou qual nota).
+- [x] Criar visualização de logs de auditoria no frontend (quem alterou qual nota).
 - [ ] Reforçar validações de permissão para edição de notas (apenas Admin/Secretaria).
 
 ---
