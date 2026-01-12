@@ -36,6 +36,7 @@ export const Sidebar = () => {
     if (isAdmin) {
       base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
       base.push({ label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` });
+      base.push({ label: "Audit Logs", icon: <ArticleIcon />, path: `${appBasePath}/audit-logs` });
     }
     // Add Professor Dashboard for admin or professor
     if (isAdmin || user?.role === "professor") {

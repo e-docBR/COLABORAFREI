@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 
 from ..core.database import Base
@@ -15,6 +15,7 @@ class Ocorrencia(Base):
     tipo = Column(String(50), nullable=False) # ADVERTENCIA, ELOGIO, ATRASO, SUSPENSAO, NOTE
     descricao = Column(Text, nullable=False)
     data_ocorrencia = Column(DateTime, default=datetime.now)
+    resolvida = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.now)
 
     aluno = relationship("Aluno", backref="ocorrencias")
@@ -29,5 +30,6 @@ class Ocorrencia(Base):
             "tipo": self.tipo,
             "descricao": self.descricao,
             "data_ocorrencia": self.data_ocorrencia.isoformat(),
+            "resolvida": self.resolvida,
             "created_at": self.created_at.isoformat()
         }

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
 from ..core.database import Base
@@ -11,6 +11,7 @@ class Comunicado(Base):
     titulo = Column(String(200), nullable=False)
     conteudo = Column(Text, nullable=False)
     data_envio = Column(DateTime, default=datetime.now)
+    arquivado = Column(Boolean, default=False)
     
     autor_id = Column(Integer, ForeignKey("usuarios.id"))
     autor = relationship("Usuario")
@@ -26,5 +27,6 @@ class Comunicado(Base):
             "conteudo": self.conteudo,
             "data_envio": self.data_envio.isoformat(),
             "autor": self.autor.username if self.autor else "Sistema",
-            "target": f"{self.target_type} {self.target_value or ''}".strip()
+            "target": f"{self.target_type} {self.target_value or ''}".strip(),
+            "arquivado": self.arquivado
         }

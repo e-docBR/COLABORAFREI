@@ -23,7 +23,10 @@ colaboraFREI/
 │  │  │  └─ security.py
 │  │  ├─ services/
 │  │  │  ├─ analytics.py
-│  │  │  └─ ingestion.py
+│  │  │  ├─ ai_chat.py
+│  │  │  ├─ ai_predictor.py
+│  │  │  ├─ ingestion.py
+│  │  │  └─ audit.py
 │  │  └─ models/
 │  │     ├─ __init__.py
 │  │     ├─ aluno.py
@@ -45,7 +48,10 @@ colaboraFREI/
 │  │  │  ├─ turmas/
 │  │  │  ├─ notas/
 │  │  │  ├─ graficos/
-│  │  │  └─ relatorios/
+│  │  │  ├─ graficos/
+│  │  │  ├─ relatorios/
+│  │  │  ├─ comunicados/
+│  │  │  └─ ocorrencias/
 │  │  ├─ layouts/
 │  │  ├─ lib/
 │  │  ├─ theme/
@@ -114,7 +120,11 @@ colaboraFREI/
 - **Filtros combinados:** endpoint e UI agora aceitam disciplina como filtro adicional e validam inconsistências de turno/série/turma antes de buscar os dados.
 - **Estabilidade do relatório:** a tela passou a calcular métricas derivadas antes dos estados de loading/erro, mantendo a ordem dos hooks do React e evitando falhas na navegação.
 
-## 9. Atualizações — 15/12/2025
-- **Busca de alunos:** `GET /alunos` agora aceita `q` sobre nome, matrícula ou turma (OR) para alinhar com o campo "Nome ou matrícula" na UI.
-- **Filtros dinâmicos na UI:** a página `/app/alunos` consome `listTurmas` para preencher turnos e turmas reais, evitando listas fixas e garantindo filtros válidos.
-- **Gráficos comparativos:** novo slug `medias-por-trimestre` traz a evolução das médias por trimestre com filtros por turno, série, turma e disciplina; UI ganhou o gráfico correspondente.
+## 9. Atualizações Recentes e Status (Janeiro 2026)
+- **Módulos de IA**: Backend implementado (`ai_chat` e `ai_predictor`). Frontend do Chatbot pendente.
+- **Novos Módulos**: `Comunicados` e `Ocorrências` implementados no frontend e backend.
+- **Dashboard**: `TeacherDashboard` adicionado para visão específica do professor.
+- **Risco**: Modelo de regressão logística implementado para predição de risco de reprovação.
+
+## 10. Próximos Passos (Imediato)
+Consultar `docs/ROADMAP.md` para detalhes. O foco imediato é a **Interface do Chatbot de Dados**.

@@ -396,6 +396,21 @@ export const api = createApi({
       }),
       invalidatesTags: ["Comunicados"]
     }),
+    updateComunicado: builder.mutation<void, { id: number; titulo?: string; conteudo?: string; arquivado?: boolean }>({
+      query: ({ id, ...body }) => ({
+        url: `/comunicados/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: ["Comunicados"]
+    }),
+    deleteComunicado: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/comunicados/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Comunicados"]
+    }),
     listOcorrencias: builder.query<any[], string | void>({
       query: (aluno_id) => ({
         url: "/ocorrencias",
@@ -410,6 +425,32 @@ export const api = createApi({
         body
       }),
       invalidatesTags: ["Ocorrencias"]
+    }),
+    updateOcorrencia: builder.mutation<void, { id: number; tipo?: string; descricao?: string; resolvida?: boolean }>({
+      query: ({ id, ...body }) => ({
+        url: `/ocorrencias/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: ["Ocorrencias"]
+    }),
+    deleteOcorrencia: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/ocorrencias/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Ocorrencias"]
+    }),
+    chat: builder.mutation<{ response: string }, { message: string }>({
+      query: (body) => ({
+        url: "/chat",
+        method: "POST",
+        body
+      })
+    }),
+    listAuditLogs: builder.query<{ id: number; action: string; user_id: number; target_type: string; timestamp: string; details?: any }[], void>({
+      query: () => "/audit-logs",
+      keepUnusedDataFor: 0
     })
   })
 });
@@ -437,6 +478,12 @@ export const {
   useDeleteUsuarioMutation,
   useListComunicadosQuery,
   useCreateComunicadoMutation,
+  useUpdateComunicadoMutation,
+  useDeleteComunicadoMutation,
   useListOcorrenciasQuery,
-  useCreateOcorrenciaMutation
+  useCreateOcorrenciaMutation,
+  useUpdateOcorrenciaMutation,
+  useDeleteOcorrenciaMutation,
+  useChatMutation,
+  useListAuditLogsQuery
 } = api;

@@ -82,4 +82,73 @@ def register(parent: Blueprint) -> None:
         
         return jsonify({"message": "Ocorrência registrada!"}), 201
 
+    @bp.patch("/ocorrencias/<int:ocorrencia_id>")
+    @jwt_required()
+    def update_ocorrencia(ocorrencia_id: int):
+        claims = get_jwt()
+        roles = claims.get("roles", [])
+        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+            return jsonify({"error": "Acesso negado"}), 403
+
+        data = request.json or {}
+        user_id = int(get_jwt_identity())
+
+        with session_scope() as session:
+            ocorrencia = session.get(Ocorrencia, ocorrencia_id)
+            if not ocorrencia:
+                return jsonify({"error": "Ocorrência não encontrada"}), 404
+            
+            # Update fields
+            if "tipo" in data:
+                ocorrencia.tipo = data["tipo"]
+            if "descricao" in data:
+                ocorrencia.descricao = data["descricao"]
+            if "resolvida" in data:
+                ocorrencia.resolvida = bool(data["resolvida"])
+            
+            # Audit
+            from ...services import log_action
+            log_action(
+                session, 
+                user_id, 
+                "UPDATE", 
+                "Ocorrencia", 
+                ocorrencia.id, 
+                {"updated_fields": list(data.keys())}
+            )
+            
+            session.add(ocorrencia)
+        
+        return jsonify({"message": "Atualizado com sucesso"}), 200
+
+    @bp.delete("/ocorrencias/<int:ocorrencia_id>")
+    @jwt_required()
+    def delete_ocorrencia(ocorrencia_id: int):
+        claims = get_jwt()
+        roles = claims.get("roles", [])
+        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+            return jsonify({"error": "Acesso negado"}), 403
+
+        user_id = int(get_jwt_identity())
+
+        with session_scope() as session:
+            ocorrencia = session.get(Ocorrencia, ocorrencia_id)
+            if not ocorrencia:
+                return jsonify({"error": "Ocorrência não encontrada"}), 404
+            
+            session.delete(ocorrencia)
+            
+            # Audit
+            from ...services import log_action
+            log_action(
+                session, 
+                user_id, 
+                "DELETE", 
+                "Ocorrencia", 
+                ocorrencia_id, 
+                {"deleted": True}
+            )
+        
+        return jsonify({"message": "Removido com sucesso"}), 200
+
     parent.register_blueprint(bp)

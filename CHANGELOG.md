@@ -16,7 +16,11 @@ All notable changes to this project will be documented in this file.
 - **Phase 5 (Advanced)**:
     - **Ocorrências Disciplinares**: Module to register warnings, compliments, and suspensions.
     - **Audit Logs**: Security tracking for critical actions (create/edit).
-    - **Data Chatbot**: AI-powered assistant for natural language queries about school data.
+    - **Data Chatbot**: AI-powered assistant with **new interactive Floating Widget** for natural language queries.
+    - **Teacher Dashboard**: Analytics view for teachers (grade distribution, risk alerts).
+    - **Risk Engine**: Machine Learning model (Logistic Regression) to predict student failure risk.
+- **Phase 6 (Data Corrections & Admin)**:
+    - **Audit Logs UI**: Dedicated page for admins to view system logs.
 - **Phase 4 (Communication)**:
     - **Comunicados**: Announcement system targeting School (Todos), Class (Turma), or Individual Students.
     - **Portal**: Notification center for students/guardians.

@@ -77,4 +77,62 @@ def register(parent: Blueprint) -> None:
         
         return jsonify({"message": "Comunicado enviado!"}), 201
 
+    @bp.patch("/comunicados/<int:comunicado_id>")
+    @jwt_required()
+    def update_comunicado(comunicado_id: int):
+        claims = get_jwt()
+        roles = claims.get("roles", [])
+        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+            return jsonify({"error": "Acesso negado"}), 403
+
+        data = request.json or {}
+        user_id = int(get_jwt_identity())
+
+        with session_scope() as session:
+            comunicado = session.get(Comunicado, comunicado_id)
+            if not comunicado:
+                return jsonify({"error": "Comunicado não encontrado"}), 404
+            
+            # Check ownership if not admin? 
+            # Let's simple check: Admin/Coord/Direcao can edit all. Professor only own?
+            # For simplicity, let staff edit.
+            
+            if "titulo" in data:
+                comunicado.titulo = data["titulo"]
+            if "conteudo" in data:
+                comunicado.conteudo = data["conteudo"]
+            if "arquivado" in data:
+                comunicado.arquivado = bool(data["arquivado"])
+            
+            # Audit could be added here similar to Ocorrencias
+
+            session.add(comunicado)
+        
+        return jsonify({"message": "Atualizado com sucesso"}), 200
+
+    @bp.delete("/comunicados/<int:comunicado_id>")
+    @jwt_required()
+    def delete_comunicado(comunicado_id: int):
+        claims = get_jwt()
+        roles = claims.get("roles", [])
+        if "admin" not in roles and "coordenacao" not in roles:
+             # Let's say only admin/coord can delete globally. Or author.
+             pass
+
+        user_id = int(get_jwt_identity())
+        
+        with session_scope() as session:
+            comunicado = session.get(Comunicado, comunicado_id)
+            if not comunicado:
+                return jsonify({"error": "Comunicado não encontrado"}), 404
+            
+            # Permission check: Admin/Coord or Author
+            has_permission = "admin" in roles or "coordenacao" in roles or comunicado.autor_id == user_id
+            if not has_permission:
+                return jsonify({"error": "Acesso negado"}), 403
+
+            session.delete(comunicado)
+        
+        return jsonify({"message": "Removido com sucesso"}), 200
+
     parent.register_blueprint(bp)

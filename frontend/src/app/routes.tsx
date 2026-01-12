@@ -20,6 +20,7 @@ import { LandingPage } from "../features/landing/LandingPage";
 import { TeacherDashboard } from "../features/dashboard/TeacherDashboard";
 import { ComunicadosPage } from "../features/comunicados/ComunicadosPage";
 import { OcorrenciasPage } from "../features/ocorrencias/OcorrenciasPage";
+import { AuditLogsPage } from "../features/usuarios/AuditLogsPage";
 
 const requireAuth = async () => {
   const state = store.getState();
@@ -79,6 +80,7 @@ export const appRouter = createBrowserRouter([
       { path: "relatorios/:slug", element: <RelatorioDetailPage /> },
       { path: "uploads", element: <UploadsPage /> },
       { path: "usuarios", element: <UsuariosPage /> },
+      { path: "audit-logs", element: <AuditLogsPage /> },
       { path: "comunicados", element: <ComunicadosPage /> },
       { path: "ocorrencias", element: <OcorrenciasPage /> },
       { path: "meu-boletim", element: <MeuBoletimPage /> }

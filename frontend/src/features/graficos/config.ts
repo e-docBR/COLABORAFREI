@@ -93,7 +93,8 @@ export const CHARTS_BY_SLUG = Object.fromEntries(CHARTS.map((chart) => [chart.sl
 export const TRIMESTRES = [
   { value: "1", label: "1º Trimestre" },
   { value: "2", label: "2º Trimestre" },
-  { value: "3", label: "3º Trimestre" }
+  { value: "3", label: "3º Trimestre" },
+  { value: "final", label: "Média Final (Total)" }
 ];
 
 export const TURNOS = [
