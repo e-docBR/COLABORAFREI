@@ -84,8 +84,10 @@ def register(parent: Blueprint) -> None:
                     query = query.filter(Aluno.turno == turno)
 
             notas = query.limit(200).all()
+            
+            # Serialize within session context to avoid DetachedInstanceError
+            items = [serialize_nota_row(nota, nota.aluno) for nota in notas]
 
-        items = [serialize_nota_row(nota, nota.aluno) for nota in notas]
         return jsonify({"items": items, "total": len(items)})
 
     @bp.patch("/notas/<int:nota_id>")

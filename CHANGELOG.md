@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-01-13
+
+### 🚀 Added
+- **Multi-Tenancy Architecture**:
+    - Implementação completa de sistema multi-tenant
+    - Modelo `Tenant` para isolamento de dados
+    - Middleware de tenant context
+    - Migrations para suporte a multi-tenancy
+
+- **Arquitetura em Camadas**:
+    - **Service Layer**: Lógica de negócio separada (AlunoService, TurmaService, OcorrenciaService, etc.)
+    - **Repository Layer**: Abstração de acesso a dados
+    - **Schema Layer**: Validação com Pydantic (AlunoSchema, OcorrenciaSchema, etc.)
+    - **Exception Handling**: Sistema centralizado de tratamento de erros
+    - **Middleware**: Request logging e tenant context
+
+- **Docker Production Support**:
+    - `docker-compose.prod.yml` para deployment em produção
+    - `Dockerfile.prod` para frontend com Nginx
+    - `nginx.conf` para servir frontend otimizado
+    - `entrypoint.sh` para inicialização automática de migrações
+    - Health checks em todos os serviços
+
+- **Documentação Completa**:
+    - `docs/DEPLOYMENT.md`: Guia completo de deployment
+    - `docs/ARCHITECTURE.md`: Documentação da arquitetura do sistema
+    - Instruções para Docker e deployment manual
+    - Troubleshooting e manutenção
+
+### 🔧 Changed
+- **Backend Refactoring**:
+    - Migração para arquitetura em camadas
+    - Separação de responsabilidades (SRP)
+    - Melhoria na organização de código
+    - Padronização de respostas de API
+
+- **Database Improvements**:
+    - Adição de campo `tenant_id` em todas as tabelas principais
+    - Índices otimizados para queries multi-tenant
+    - Migrations organizadas e versionadas
+
+- **API Enhancements**:
+    - Endpoints mais consistentes
+    - Melhor tratamento de erros
+    - Validação de dados com Pydantic
+    - Paginação otimizada
+
+### 🐛 Fixed
+- Correção de erro de migração do Alembic (alembic.ini)
+- Inicialização automática do banco de dados via entrypoint
+- Problemas de CORS em produção
+- Isolamento de dados entre tenants
+
+### 📚 Documentation
+- Guia completo de deployment (desenvolvimento e produção)
+- Documentação de arquitetura com diagramas
+- Troubleshooting guide
+- Convenções de código e padrões de design
+
 ## [Unreleased]
 ### Added
 - **Ocorrências System Improvements**:

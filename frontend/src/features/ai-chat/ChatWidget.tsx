@@ -79,12 +79,10 @@ export const ChatWidget = () => {
 
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: responseData.text,
+                text: responseData.response,
                 sender: "bot",
                 timestamp: new Date(),
-                type: responseData.type as any,
-                data: responseData.data,
-                chart_config: responseData.chart_config
+                type: "text" // Simple text for now as chat endpoint returns { response: string }
             };
             setMessages((prev) => [...prev, botMsg]);
         } catch (error) {

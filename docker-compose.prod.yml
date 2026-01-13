@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: colabora_edu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Uses default CMD (gunicorn) from Dockerfile
+    environment:
+      FLASK_APP: app
+      FLASK_DEBUG: "0"
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/colabora_edu
+      REDIS_URL: redis://redis:6379/0
+      # In prod, this should list actual domains
+      ALLOWED_ORIGINS: '["http://localhost", "https://myschool.com"]'
+      UPLOAD_FOLDER: /data/uploads
+    volumes:
+      - ./data:/data
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: [ "rq", "worker", "default", "--url", "redis://redis:6379/0" ]
+    environment:
+      FLASK_APP: app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/colabora_edu
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_FOLDER: /data/uploads
+    volumes:
+      - ./data:/data
+    networks:
+      - app_network
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8090:80"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

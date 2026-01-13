@@ -1,10 +1,10 @@
-from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
-from sqlalchemy import select, desc
+from pydantic import ValidationError
 
 from ...core.database import session_scope
-from ...models import Ocorrencia, Aluno
+from ...services.ocorrencia_service import OcorrenciaService
+from ...schemas.ocorrencia import OcorrenciaCreate, OcorrenciaUpdate
 
 def register(parent: Blueprint) -> None:
     bp = Blueprint("ocorrencias", __name__)
@@ -12,30 +12,29 @@ def register(parent: Blueprint) -> None:
     @bp.get("/ocorrencias")
     @jwt_required()
     def list_ocorrencias():
-        # Optional filter by aluno_id query param
         req_aluno_id = request.args.get("aluno_id")
-        
         claims = get_jwt()
         roles = claims.get("roles", [])
-        user_aluno_id = claims.get("aluno_id") # If student logged in
+        user_aluno_id = claims.get("aluno_id")
+        user_id = int(get_jwt_identity()) # needed for service init? Not really for list but consistent
 
         with session_scope() as session:
-            stm = select(Ocorrencia).order_by(desc(Ocorrencia.data_ocorrencia))
-
-            # Access Control
+            service = OcorrenciaService(session, user_id)
+            
+            # Authorization logic for listing
             is_staff = any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles)
+            
+            target_aluno_id = None
             if not is_staff:
-                # Student can only see their own
                 if not user_aluno_id:
-                    return jsonify([]), 200
-                stm = stm.where(Ocorrencia.aluno_id == user_aluno_id)
+                     return jsonify([]), 200
+                target_aluno_id = int(user_aluno_id)
             else:
-                # Staff can see all, or filter by specific student
                 if req_aluno_id:
-                    stm = stm.where(Ocorrencia.aluno_id == int(req_aluno_id))
+                    target_aluno_id = int(req_aluno_id)
 
-            results = session.execute(stm).scalars().all()
-            return jsonify([o.to_dict() for o in results])
+            results = service.list_ocorrencias(aluno_id=target_aluno_id)
+            return jsonify([r.model_dump() for r in results])
 
     @bp.post("/ocorrencias")
     @jwt_required()
@@ -46,41 +45,21 @@ def register(parent: Blueprint) -> None:
             return jsonify({"error": "Acesso negado"}), 403
 
         data = request.json or {}
-        if not data.get("aluno_id") or not data.get("tipo") or not data.get("descricao"):
-            return jsonify({"error": "Campos obrigatórios: aluno_id, tipo, descricao"}), 400
-
         user_id = int(get_jwt_identity())
         
         try:
-            # Parse date or use now
-            dt_str = data.get("data_ocorrencia")
-            dt = datetime.fromisoformat(dt_str) if dt_str else datetime.now()
-        except:
-            dt = datetime.now()
+             schema = OcorrenciaCreate(**data)
+        except ValidationError as e:
+             return jsonify(e.errors()), 400
 
         with session_scope() as session:
-            novo = Ocorrencia(
-                aluno_id=int(data["aluno_id"]),
-                autor_id=user_id,
-                tipo=data["tipo"],
-                descricao=data["descricao"],
-                data_ocorrencia=dt
-            )
-            session.add(novo)
-            session.flush() # To get ID
-            
-            # Audit
-            from ...services import log_action
-            log_action(
-                session, 
-                user_id, 
-                "CREATE", 
-                "Ocorrencia", 
-                novo.id, 
-                {"tipo": novo.tipo, "aluno_id": novo.aluno_id}
-            )
-        
-        return jsonify({"message": "Ocorrência registrada!"}), 201
+            service = OcorrenciaService(session, user_id)
+            try:
+                service.create(schema) # we can return created object if needed
+                return jsonify({"message": "Ocorrência registrada!"}), 201
+            except Exception as e:
+                # In production use logger
+                return jsonify({"error": str(e)}), 500
 
     @bp.patch("/ocorrencias/<int:ocorrencia_id>")
     @jwt_required()
@@ -92,34 +71,20 @@ def register(parent: Blueprint) -> None:
 
         data = request.json or {}
         user_id = int(get_jwt_identity())
+        
+        try:
+            schema = OcorrenciaUpdate(**data)
+        except ValidationError as e:
+             return jsonify(e.errors()), 400
 
         with session_scope() as session:
-            ocorrencia = session.get(Ocorrencia, ocorrencia_id)
-            if not ocorrencia:
+            service = OcorrenciaService(session, user_id)
+            updated = service.update(ocorrencia_id, schema)
+            
+            if not updated:
                 return jsonify({"error": "Ocorrência não encontrada"}), 404
             
-            # Update fields
-            if "tipo" in data:
-                ocorrencia.tipo = data["tipo"]
-            if "descricao" in data:
-                ocorrencia.descricao = data["descricao"]
-            if "resolvida" in data:
-                ocorrencia.resolvida = bool(data["resolvida"])
-            
-            # Audit
-            from ...services import log_action
-            log_action(
-                session, 
-                user_id, 
-                "UPDATE", 
-                "Ocorrencia", 
-                ocorrencia.id, 
-                {"updated_fields": list(data.keys())}
-            )
-            
-            session.add(ocorrencia)
-        
-        return jsonify({"message": "Atualizado com sucesso"}), 200
+            return jsonify({"message": "Atualizado com sucesso"}), 200
 
     @bp.delete("/ocorrencias/<int:ocorrencia_id>")
     @jwt_required()
@@ -132,22 +97,11 @@ def register(parent: Blueprint) -> None:
         user_id = int(get_jwt_identity())
 
         with session_scope() as session:
-            ocorrencia = session.get(Ocorrencia, ocorrencia_id)
-            if not ocorrencia:
+            service = OcorrenciaService(session, user_id)
+            success = service.delete(ocorrencia_id)
+            
+            if not success:
                 return jsonify({"error": "Ocorrência não encontrada"}), 404
-            
-            session.delete(ocorrencia)
-            
-            # Audit
-            from ...services import log_action
-            log_action(
-                session, 
-                user_id, 
-                "DELETE", 
-                "Ocorrencia", 
-                ocorrencia_id, 
-                {"deleted": True}
-            )
         
         return jsonify({"message": "Removido com sucesso"}), 200
 

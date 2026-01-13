@@ -1,36 +1,9 @@
 """Alunos endpoints."""
-from math import ceil
-
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
-from sqlalchemy import func, or_
+from flask_jwt_extended import get_jwt, jwt_required
 
 from ...core.database import session_scope
-from ...models import Aluno, Nota
-
-
-def serialize_aluno(aluno: Aluno, media: float | None = None) -> dict[str, str | int | float | None]:
-    return {
-        "id": aluno.id,
-        "matricula": aluno.matricula,
-        "nome": aluno.nome,
-        "turma": aluno.turma,
-        "turno": aluno.turno,
-        "media": float(media) if media is not None else None,
-    }
-
-
-def serialize_nota(nota: Nota) -> dict[str, str | int | float | None]:
-    return {
-        "id": nota.id,
-        "disciplina": nota.disciplina,
-        "trimestre1": float(nota.trimestre1) if nota.trimestre1 is not None else None,
-        "trimestre2": float(nota.trimestre2) if nota.trimestre2 is not None else None,
-        "trimestre3": float(nota.trimestre3) if nota.trimestre3 is not None else None,
-        "total": float(nota.total) if nota.total is not None else None,
-        "faltas": nota.faltas,
-        "situacao": nota.situacao,
-    }
+from ...services.aluno_service import AlunoService
 
 
 def register(parent: Blueprint) -> None:
@@ -41,85 +14,43 @@ def register(parent: Blueprint) -> None:
     def list_alunos():
         if "aluno" in (get_jwt().get("roles") or []):
             return jsonify({"error": "Acesso restrito"}), 403
+            
         page = max(1, int(request.args.get("page", 1)))
         per_page = min(10000, int(request.args.get("per_page", 20)))
         turno = request.args.get("turno")
         turma = request.args.get("turma")
         query_text = request.args.get("q")
 
-        def apply_filters(query):
-            if turno:
-                query = query.filter(Aluno.turno == turno)
-            if turma:
-                query = query.filter(Aluno.turma == turma)
-            if query_text:
-                like_term = f"%{query_text}%"
-                query = query.filter(
-                    or_(
-                        Aluno.nome.ilike(like_term),
-                        Aluno.matricula.ilike(like_term),
-                        Aluno.turma.ilike(like_term),
-                    )
-                )
-            return query
-
         with session_scope() as session:
-            count_query = apply_filters(session.query(func.count(Aluno.id)))
-            total = count_query.scalar() or 0
-
-            query = apply_filters(
-                session.query(Aluno, func.avg(Nota.total).label("media"))
-                .outerjoin(Nota)
-                .group_by(Aluno.id)
+            service = AlunoService(session)
+            result = service.list_alunos(
+                page=page,
+                per_page=per_page,
+                turno=turno,
+                turma=turma,
+                query_text=query_text
             )
-
-            results = (
-                query.order_by(Aluno.nome)
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-                .all()
-            )
-
-            items = [serialize_aluno(aluno, media) for aluno, media in results]
-
-        return jsonify(
-            {
-                "items": items,
-                "meta": {
-                    "page": page,
-                    "per_page": per_page,
-                    "total": total,
-                    "pages": ceil(total / per_page) if total else 0,
-                },
-            }
-        )
+            
+            # Pydantic v2 use model_dump
+            return jsonify(result.model_dump())
 
     @bp.get("/alunos/<int:aluno_id>")
     @jwt_required()
     def retrieve_aluno(aluno_id: int):
         claims = get_jwt()
         aluno_claim_id = claims.get("aluno_id")
+        
         if "aluno" in (claims.get("roles") or []):
             if not aluno_claim_id or int(aluno_claim_id) != int(aluno_id):
                 return jsonify({"error": "Acesso restrito"}), 403
+                
         with session_scope() as session:
-            aluno = session.get(Aluno, aluno_id)
-            if not aluno:
+            service = AlunoService(session)
+            aluno_detail = service.get_aluno_details(aluno_id)
+            
+            if not aluno_detail:
                 return jsonify({"error": "Aluno não encontrado"}), 404
-            media = (
-                session.query(func.avg(Nota.total))
-                .filter(Nota.aluno_id == aluno_id)
-                .scalar()
-            )
-            notas = (
-                session.query(Nota)
-                .filter(Nota.aluno_id == aluno_id)
-                .order_by(Nota.disciplina)
-                .all()
-            )
 
-        payload = serialize_aluno(aluno, media)
-        payload["notas"] = [serialize_nota(nota) for nota in notas]
-        return jsonify(payload)
+            return jsonify(aluno_detail.model_dump())
 
     parent.register_blueprint(bp)

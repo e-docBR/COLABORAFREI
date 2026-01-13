@@ -16,4 +16,8 @@ class Usuario(Base):
     aluno_id: Mapped[int | None] = mapped_column(ForeignKey("alunos.id"), nullable=True)
     photo_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    tenant_id: Mapped[int | None] = mapped_column(ForeignKey("tenants.id"), nullable=True)
+    
     aluno = relationship("Aluno", back_populates="usuario")
+    tenant = relationship("Tenant", back_populates="usuarios")

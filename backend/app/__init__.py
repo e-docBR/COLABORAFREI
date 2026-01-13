@@ -26,6 +26,13 @@ def create_app() -> Flask:
     init_db(app)
     register_blueprints(app)
     register_cli(app)
+    
+    from .core.handlers import register_error_handlers
+    register_error_handlers(app)
+    
+    from flask_migrate import Migrate
+    from .core.database import Base
+    Migrate(app, Base.metadata)
 
     @app.get("/")
     def root() -> dict[str, str]:

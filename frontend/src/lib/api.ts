@@ -387,7 +387,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Usuarios"]
     }),
-    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string }[], void>({
+    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean }[], void>({
       query: () => "/comunicados",
       providesTags: ["Comunicados"]
     }),
@@ -414,14 +414,14 @@ export const api = createApi({
       }),
       invalidatesTags: ["Comunicados"]
     }),
-    listOcorrencias: builder.query<any[], string | void>({
+    listOcorrencias: builder.query<{ id: number; aluno_id: number; tipo: string; descricao: string; resolvida: boolean; data_ocorrencia: string; aluno_nome: string; autor_nome: string; created_at: string }[], string | void>({
       query: (aluno_id) => ({
         url: "/ocorrencias",
         params: aluno_id ? { aluno_id } : undefined
       }),
       providesTags: ["Ocorrencias"]
     }),
-    createOcorrencia: builder.mutation<void, { aluno_id: number; tipo: string; descricao: string; data_ocorrencia?: string }>({
+    createOcorrencia: builder.mutation<void, { aluno_id: number; tipo: string; descricao: string; data_ocorrencia?: string; resolvida?: boolean }>({
       query: (body) => ({
         url: "/ocorrencias",
         method: "POST",

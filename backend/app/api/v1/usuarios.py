@@ -58,6 +58,8 @@ def register(parent: Blueprint) -> None:
 
         with session_scope() as session:
             ensure_all_aluno_users(session)
+            session.flush()  # Ensure new users have IDs before querying
+            
             query = (
                 session.query(Usuario)
                 .options(joinedload(Usuario.aluno))
@@ -82,10 +84,13 @@ def register(parent: Blueprint) -> None:
                 .limit(per_page)
                 .all()
             )
+            
+            # Serialize within session context to avoid DetachedInstanceError
+            serialized_usuarios = [serialize_usuario(usuario) for usuario in usuarios]
 
         return jsonify(
             {
-                "items": [serialize_usuario(usuario) for usuario in usuarios],
+                "items": serialized_usuarios,
                 "meta": {
                     "page": page,
                     "per_page": per_page,

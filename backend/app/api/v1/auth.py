@@ -1,46 +1,30 @@
 """Auth endpoints."""
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from pydantic import ValidationError
 
 from ...core.database import session_scope
-from ...core.security import generate_tokens, hash_password, verify_password
-from ...models import Usuario
-
+from ...core.security import generate_tokens
+from ...services.usuario_service import UsuarioService
+from ...schemas.usuario import LoginRequest, ChangePasswordRequest
 
 def register(parent: Blueprint) -> None:
     bp = Blueprint("auth", __name__)
 
     @bp.post("/auth/login")
     def login():
-        payload = request.get_json() or {}
-        username = payload.get("username")
-        password = payload.get("password")
-        if not username or not password:
-            return jsonify({"error": "Credenciais obrigatórias"}), 400
+        try:
+            payload = LoginRequest(**(request.get_json() or {}))
+        except ValidationError as e:
+            # We can let the global handler catch this if we configure it to catch Pydantic errors globally
+            # But let's raise it to be caught
+            raise e
 
         with session_scope() as session:
-            user = session.query(Usuario).filter(Usuario.username == username).first()
-
-        if not user or not verify_password(password, user.password_hash):
-            return jsonify({"error": "Usuário ou senha inválidos"}), 401
-
-        roles = [user.role] if user.role else []
-        extra_claims = {"aluno_id": user.aluno_id}
-        tokens = generate_tokens(identity=str(user.id), roles=roles, extra_claims=extra_claims)
-        return jsonify(
-            {
-                **tokens,
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "role": user.role,
-                    "is_admin": user.is_admin,
-                    "aluno_id": user.aluno_id,
-                    "photo_url": user.photo_url,
-                    "must_change_password": user.must_change_password,
-                },
-            }
-        )
+            service = UsuarioService(session)
+            # Service raises UnauthorizedError if fails, captured by global handler
+            response = service.authenticate(payload.username, payload.password)
+            return jsonify(response.model_dump())
 
     @bp.post("/auth/refresh")
     @jwt_required(refresh=True)
@@ -60,28 +44,17 @@ def register(parent: Blueprint) -> None:
     @bp.post("/auth/change-password")
     @jwt_required()
     def change_password():
-        payload = request.get_json() or {}
-        current_password = payload.get("current_password")
-        new_password = payload.get("new_password")
+        try:
+            payload = ChangePasswordRequest(**(request.get_json() or {}))
+        except ValidationError as e:
+             raise e
 
-        if not current_password or not new_password:
-            return jsonify({"error": "Campos obrigatórios: senha atual e nova senha"}), 400
-
-        user_id = get_jwt_identity()
-        print(f"DEBUG: change_password user_id={user_id} type={type(user_id)}")
+        user_id = int(get_jwt_identity())
+        
         with session_scope() as session:
-            all_users = session.query(Usuario).all()
-            print(f"DEBUG: all users: {[u.id for u in all_users]}")
-            user = session.get(Usuario, int(user_id))
-            print(f"DEBUG: user found={user}")
-            if not user:
-                return jsonify({"error": "Usuário não encontrado"}), 404
-            if not verify_password(current_password, user.password_hash):
-                return jsonify({"error": "Senha atual inválida"}), 400
-            user.password_hash = hash_password(new_password)
-            user.must_change_password = False
-            session.add(user)
-
+            service = UsuarioService(session)
+            service.change_password(user_id, payload.current_password, payload.new_password)
+            
         return ("", 204)
 
     parent.register_blueprint(bp)

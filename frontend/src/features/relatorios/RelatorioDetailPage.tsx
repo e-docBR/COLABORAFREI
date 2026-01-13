@@ -25,7 +25,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { useGetNotasFiltrosQuery, useGetRelatorioQuery, useListTurmasQuery } from "../../lib/api";
 import { RELATORIOS_BY_SLUG, type RelatorioSlug } from "./config";
 
-const DEFAULT_FILTERS = { turno: "", serie: "", turma: "", disciplina: "" } as const;
+const DEFAULT_FILTERS = { turno: "", serie: "", turma: "", disciplina: "" };
 
 const deriveSerieFromTurma = (turma?: string) => {
   if (!turma) return "";
