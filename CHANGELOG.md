@@ -63,6 +63,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Dashboard Improvements**:
+    - Updated "Média Geral" card label to "Média dos Totais" for clarity.
+
+### Added
 - **Ocorrências System Improvements**:
     - Fixed pagination issue in `api/v1/alunos` ensuring all students appear in the selection dropdown.
     - Added database migration for `ocorrencias` table.
