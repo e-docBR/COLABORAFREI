@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-01-26
+
+### 🚀 Added
+- **🤖 AI FreiRonaldo (Advanced Analytics)**:
+    - Rebranded and enhanced the AI Assistant with over 20 analytical intents.
+    - Added support for **multimodal responses**: Automated Pie Charts for status and Bar Charts for performance/attendance.
+    - New deep-analysis features: **Radar de Abandono** (Dropout Radar) and **Missing Grades** detection.
+    - Improved natural language processing for Turma recognition (e.g., "6A", "7º ANO B") and student profile lookups.
+    - Integrated support for **Mural (Notices)** and **Occurrences** in chat queries.
+
+### 🔧 Fixes & Enhancements
+- **🎨 UI/UX Cleanups**: Removed the redundant global search from the Dashboard TopBar to streamline navigation.
+- **🛡️ Robust Regex Matching**: Fixed backend NLP issues with accented characters and specific school academic terms.
+- **📊 Real-time Chat Sync**: Updated RTK Query hooks and frontend types to support complex AI-generated datasets.
+
 ## [0.5.1] - 2026-01-26
+
 
 ### 🔧 Fixes & Enhancements
 - **📊 Business Logic Update**: Adjusted the **"Em Risco" (At Risk)** KPI threshold from 60 to **50**. This aligns the dashboard metrics with conservative academic criteria, reducing false positives in risk reporting.

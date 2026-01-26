@@ -4,6 +4,14 @@ import type { RootState } from "../app/store";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+export interface ChatResponse {
+  text: string;
+  type: "text" | "table" | "chart";
+  data?: any;
+  chart_config?: any;
+}
+
+
 type DashboardKpis = {
   total_alunos: number;
   total_turmas: number;
@@ -446,13 +454,14 @@ export const api = createApi({
       }),
       invalidatesTags: ["Ocorrencias"]
     }),
-    chat: builder.mutation<{ response: string }, { message: string }>({
+    chat: builder.mutation<ChatResponse, { message: string }>({
       query: (body) => ({
         url: "/chat",
         method: "POST",
         body
       })
     }),
+
     listAuditLogs: builder.query<{ id: number; action: string; user_id: number; target_type: string; timestamp: string; details?: any }[], void>({
       query: () => "/audit-logs",
       keepUnusedDataFor: 0

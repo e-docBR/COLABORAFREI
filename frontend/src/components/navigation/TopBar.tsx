@@ -46,7 +46,8 @@ export const TopBar = () => {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
-  const showSearch = !["/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas", "/app/uploads", "/app/professor", "/app/ocorrencias"].includes(location.pathname);
+  const showSearch = !["/app", "/app/", "/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas", "/app/uploads", "/app/professor", "/app/ocorrencias"].includes(location.pathname);
+
   const [uploadPhoto] = useUploadPhotoMutation();
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);

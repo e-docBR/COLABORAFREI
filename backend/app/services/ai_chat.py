@@ -1,9 +1,9 @@
-
 import re
 from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import Session
-from ..models import Aluno, Nota
+from ..models import Aluno, Nota, Comunicado, Ocorrencia
 from ..core.database import SessionLocal
+
 from loguru import logger
 from typing import TypedDict, List, Any, Optional
 
@@ -16,29 +16,70 @@ class AIResponse(TypedDict):
 class AIAnalystEngine:
     def __init__(self):
         self.intent_patterns = {
-            'chart_grades': [r'gr[áa]fico.*nota', r'comparar.*media', r'desempenho.*turma'],
-            'risky_students': [r'risco', r'reprovad', r'nota.*baixa', r'vermelho'],
-            'best_students': [r'melhor.*aluno', r'maior.*nota', r'destaque'],
-            'count_stats': [r'quantos', r'total', r'contar'],
-            'report_faults': [r'faltas', r'frequ[êe]ncia', r'aus[êe]ncias']
+            'chart_grades': [r'gr[áa]fico.*not[as]', r'comparar.*m[ée]dia', r'desempenho.*turma', r'm[ée]dias.*disciplina', r'desempenho.*escola'],
+            'risky_students': [r'risco', r'reprovad', r'not[as].*baix[as]', r'vermelho', r'abaixo.*50', r'perigo'],
+            'best_students': [r'melhor.*aluno', r'maior.*not[as]', r'destaque', r'top.*aluno', r'medalha', r'excel[êe]ncia'],
+            'count_stats': [r'quantos', r'total', r'contar', r'n[úu]mero de', r'quantidade'],
+            'report_faults': [r'faltas', r'frequ[êe]ncia', r'aus[êe]ncias', r'n[ãa]o veio', r'infrequente', r'presen[çc]a'],
+            'notices': [r'comunicado', r'aviso', r'mural', r'not[íi]cia', r'[úu]ltimas novidades'],
+            'occurrences': [r'ocorr[êe]ncia', r'advert[êe]ncia', r'elogio', r'comportamento', r'disciplinar'],
+            'student_info': [r'quem [ée]', r'sobre o aluno', r'perfil de', r'boletim do', r'situa[çc][ãa]o de', r'dados de'],
+            'dropout_radar': [r'abandono', r'evas[ãa]o', r'desistir', r'radar'],
+            'evolution': [r'melhorou', r'evolu', r'progresso', r'subiu', r'piorou', r'queda'],
+            'missing_grades': [r'sem not[as]', r'faltando', r'incompleto', r'pend[êe]ncia'],
+            'class_comparison': [r'diferen[çc]a.*turma', r'ranking.*turma', r'turma.*melhor']
         }
 
+
+
+
+
     def _extract_filters(self, message: str) -> dict:
-        """Extracts filters like Class (Turma) or Discipline from message."""
+        """Extracts filters like Class (Turma), Discipline, or Student Name from message."""
         filters = {}
-        message = message.upper()
+        msg_upper = message.upper()
         
-        # Extract Turma (e.g., "6A", "9 C", "1 ANO")
-        # Simple regex for typical class patterns in this context
-        turma_match = re.search(r'\b([1-9])\s*([A-Z])\b', message) # 6 A
-        if turma_match:
-            filters['turma'] = f"{turma_match.group(1)} ANO {turma_match.group(2)}"
+        # 1. Extract Turmas (e.g., "6A", "9º ANO D") - Support Multiple
+        turmas_found = []
+        # Pattern for "7º ANO B" or "7 ANO B"
+        full_matches = re.finditer(r'\b([1-9])\s*(?:º|O)?\s*ANO\s*([A-Z])\b', msg_upper)
+        for m in full_matches:
+            turmas_found.append(f"{m.group(1)}º ANO {m.group(2)}")
+            
+        # Pattern for "6A" or "9B"
+        compact_matches = re.finditer(r'\b([1-9])\s*([A-Z])\b', msg_upper)
+        for m in compact_matches:
+            val = f"{m.group(1)}º ANO {m.group(2)}"
+            if val not in turmas_found:
+                turmas_found.append(val)
         
-        # Extract Turno
-        if 'MANH' in message: filters['turno'] = 'MANHÃ'
-        if 'TARDE' in message: filters['turno'] = 'TARDE'
+        if turmas_found:
+            filters['turmas'] = turmas_found
+        elif 'ANO' in msg_upper:
+            ano_match = re.search(r'([1-9])\s*ANO', msg_upper)
+            if ano_match:
+                filters['serie'] = ano_match.group(1)
+        
+        # 2. Extract Turno
+        if 'MATUTINO' in msg_upper or 'MANH' in msg_upper: filters['turno'] = 'Matutino'
+        if 'VESPERTINO' in msg_upper or 'TARDE' in msg_upper: filters['turno'] = 'Vespertino'
+        if 'NOTURNO' in msg_upper or 'NOITE' in msg_upper: filters['turno'] = 'Noturno'
+
+        # 3. Extract Trimester
+        tri_match = re.search(r'([1-3])\s*(?:º|O)?\s*(?:TRIMESTRE|TRI)', msg_upper)
+        if tri_match:
+            filters['trimestre'] = int(tri_match.group(1))
+
+        # 4. Extract Student Name
+        name_match = re.search(r'(?:DO ALUNO|SOBRE|QUEM [ÉE]|ALUNO)\s+([A-Z\s]{3,40})', msg_upper)
+        if name_match:
+            filters['aluno_nome'] = name_match.group(1).strip()
 
         return filters
+
+
+
+
 
     def process_query(self, message: str) -> AIResponse:
         session = SessionLocal()
@@ -73,62 +114,105 @@ class AIAnalystEngine:
                  return self._analyze_performance(session, filters, above_avg=False)
 
             # 7. CHART INTENT: Hardest Subjects
-            if any(p in message_lower for p in ['dif[íi]cil', 'complexa', 'pior.*nota', 'disciplina.*baixa']):
+            if any(re.search(p, message_lower) for p in [r'dif[íi]cil', r'complexa', r'pior.*not[as]', r'disciplina.*baix[as]']):
                  return self._analyze_hardest_subjects(session, filters)
 
             # 8. CHART INTENT: Status Distribution
-            if any(p in message_lower for p in ['status', 'situa[çc][ãa]o', 'aprovad', 'recupera[çc][ãa]o']):
+            if any(re.search(p, message_lower) for p in [r'status', r'situa[çc][ãa]o', r'aprovad', r'recupera[çc][ãa]o']):
                  return self._analyze_status_stats(session, filters)
+
+
+            # 9. INFO INTENT: Notices
+            if any(re.search(p, message_lower) for p in self.intent_patterns['notices']):
+                return self._analyze_comunicados(session, filters)
+
+            # 10. INFO INTENT: Occurrences
+            if any(re.search(p, message_lower) for p in self.intent_patterns['occurrences']):
+                return self._analyze_ocorrencias(session, filters)
+
+            # 11. LOOKUP INTENT: Student details
+            if any(re.search(p, message_lower) for p in self.intent_patterns['student_info']) or filters.get('aluno_nome'):
+                return self._lookup_student(session, filters)
+
+            # 12. SPECIAL INTENT: Dropout Radar
+            if any(re.search(p, message_lower) for p in self.intent_patterns['dropout_radar']):
+                return self._analyze_dropout_radar(session, filters)
+
+            # 13. SPECIAL INTENT: Missing Grades
+            if any(re.search(p, message_lower) for p in self.intent_patterns['missing_grades']):
+                return self._analyze_missing_grades(session, filters)
 
             # Default conversational fallback
             return {
-                "text": "Posso ajudar com análises complexas. Tente: 'Gráfico de médias do 6A', 'Quem está em risco na Manhã?', 'Relatório de faltas'.",
+                "text": "Sou o AI FreiRonaldo. Posso ajudar com:\n"
+
+                        "• Alunos em risco ou com mais faltas\n"
+                        "• Comparativo de médias por turma ou disciplina\n"
+                        "• Lista de melhores alunos ou destaques\n"
+                        "• Mural de avisos e histórico de ocorrências\n"
+                        "• Perfil detalhado de qualquer aluno\n\n"
+                        "Tente: 'Quem é o aluno Pedro?', 'Quais turmas têm as menores médias?' ou 'Radar de abandono'.",
                 "type": "text",
                 "data": None,
                 "chart_config": None
             }
+
         finally:
             session.close()
 
     def _generate_grade_chart(self, session: Session, filters: dict) -> AIResponse:
         """Generates a dataset for a chart comparing grades."""
+        # Trimester logic
+        tri = filters.get('trimestre')
+        target_col = Nota.total
+        title_suffix = "Global"
+        
+        if tri == 1: target_col, title_suffix = Nota.trimestre1, "1º Tri"
+        elif tri == 2: target_col, title_suffix = Nota.trimestre2, "2º Tri"
+        elif tri == 3: target_col, title_suffix = Nota.trimestre3, "3º Tri"
+
         query = select(
             Aluno.turma, 
-            func.avg(Nota.total).label('media_geral')
+            func.avg(target_col).label('media_val')
         ).join(Nota).group_by(Aluno.turma)
 
+        if filters.get('turmas'):
+            query = query.where(Aluno.turma.in_(filters['turmas']))
         if filters.get('turno'):
             query = query.where(Aluno.turno == filters['turno'])
         
         results = session.execute(query).all()
-        data = [{"name": r.turma, "value": round(r.media_geral, 1)} for r in results]
-        # Sort by value desc
+        data = [{"name": r.turma, "value": round(float(r.media_val or 0), 1)} for r in results]
         data.sort(key=lambda x: x['value'], reverse=True)
 
         return {
-            "text": "Aqui está o comparativo de médias entre as turmas solicitadas:",
+            "text": f"Comparativo de médias ({title_suffix}) entre as turmas:",
             "type": "chart",
             "data": data,
             "chart_config": {
                 "type": "bar",
                 "xKey": "name",
                 "yKey": "value",
-                "color": "#1976d2",
-                "title": "Média Geral por Turma"
+                "color": "#14b8a6",
+                "title": f"Média {title_suffix} por Turma"
             }
         }
+
 
     def _analyze_risk(self, session: Session, filters: dict) -> AIResponse:
         """List students at risk."""
         query = select(Aluno.nome, Aluno.turma, func.avg(Nota.total).label('media'))\
             .join(Nota)\
             .group_by(Aluno.id)\
-            .having(func.avg(Nota.total) < 60)\
+            .having(func.avg(Nota.total) < 50)\
             .order_by("media")\
             .limit(10)
         
-        if filters.get('turma'):
-            query = query.where(Aluno.turma == filters['turma'])
+        if filters.get('turmas'):
+            query = query.where(Aluno.turma.in_(filters['turmas']))
+        elif filters.get('turno'):
+            query = query.where(Aluno.turno == filters['turno'])
+
 
         results = session.execute(query).all()
         
@@ -259,6 +343,9 @@ class AIAnalystEngine:
         query = select(Nota.situacao, func.count(Nota.id))\
             .where(Nota.situacao != None)\
             .group_by(Nota.situacao)
+        
+        if filters.get('turma'):
+            query = query.join(Aluno).where(Aluno.turma == filters['turma'])
             
         results = session.execute(query).all()
         data = [{"name": r.situacao, "value": r[1]} for r in results if r.situacao]
@@ -268,13 +355,133 @@ class AIAnalystEngine:
             "type": "chart",
             "data": data,
             "chart_config": {
-                "type": "bar",
+                "type": "pie",
                 "xKey": "name",
                 "yKey": "value",
-                "color": "#4caf50",
                 "title": "Situação Final dos Alunos"
             }
         }
+
+    def _analyze_comunicados(self, session: Session, filters: dict) -> AIResponse:
+        """List current notices."""
+        query = select(Comunicado).where(Comunicado.arquivado == False).order_by(desc(Comunicado.data_envio)).limit(5)
+        results = session.execute(query).scalars().all()
+        
+        if not results:
+            return {"text": "Não há comunicados ativos no momento.", "type": "text", "data": None, "chart_config": None}
+            
+        data = [r.to_dict() for r in results]
+        table_data = [{"Título": r["titulo"], "Data": r["data_envio"][:10], "Destino": r["target"]} for r in data]
+        
+        return {
+            "text": f"Encontrei {len(results)} comunicados recentes no mural.",
+            "type": "table",
+            "data": table_data,
+            "chart_config": None
+        }
+
+    def _analyze_ocorrencias(self, session: Session, filters: dict) -> AIResponse:
+        """Summary of occurrences."""
+        query = select(Ocorrencia.tipo, func.count(Ocorrencia.id)).group_by(Ocorrencia.tipo)
+        
+        if filters.get('aluno_nome'):
+            query = query.join(Aluno).where(Aluno.nome.ilike(f"%{filters['aluno_nome']}%"))
+            
+        results = session.execute(query).all()
+        
+        if not results:
+            return {"text": "Nenhuma ocorrência registrada com esses critérios.", "type": "text", "data": None, "chart_config": None}
+            
+        data = [{"name": r[0], "value": r[1]} for r in results]
+        
+        return {
+            "text": "Resumo de ocorrências por tipo:",
+            "type": "chart",
+            "data": data,
+            "chart_config": {
+                "type": "bar",
+                "xKey": "name",
+                "yKey": "value",
+                "color": "#f44336",
+                "title": "Tipos de Ocorrências"
+            }
+        }
+
+    def _lookup_student(self, session: Session, filters: dict) -> AIResponse:
+        """Look up detailed info for a student."""
+        nome = filters.get('aluno_nome')
+        if not nome:
+            return {"text": "Preciso do nome do aluno para buscar os detalhes. Ex: 'Quem é o aluno João?'", "type": "text", "data": None, "chart_config": None}
+            
+        aluno = session.execute(select(Aluno).where(Aluno.nome.ilike(f"%{nome}%"))).scalar()
+        
+        if not aluno:
+            return {"text": f"Não encontrei nenhum aluno chamado '{nome}'.", "type": "text", "data": None, "chart_config": None}
+            
+        # Get grades average
+        media = session.execute(select(func.avg(Nota.total)).where(Nota.aluno_id == aluno.id)).scalar()
+        # Get absence count
+        faltas = session.execute(select(func.sum(Nota.faltas)).where(Nota.aluno_id == aluno.id)).scalar() or 0
+        
+        status = "Em Risco" if (media or 0) < 50 else "Regular"
+        
+        return {
+            "text": f"Perfil do Aluno: {aluno.nome}\nTurma: {aluno.turma} ({aluno.turno})\nMatrícula: {aluno.matricula}\nMédia Geral: {round(float(media or 0), 1)}\nTotal de Faltas: {faltas}\nSituação: {status}",
+            "type": "text",
+            "data": {
+                "id": aluno.id,
+                "nome": aluno.nome,
+                "turma": aluno.turma,
+                "media": round(float(media or 0), 1)
+            },
+            "chart_config": None
+        }
+
+    def _analyze_dropout_radar(self, session: Session, filters: dict) -> AIResponse:
+        """Identify students at high risk based on multi-factor analysis (grades + attendance)."""
+        # Criteria: Media < 50 AND Faltas > 10
+        # This is a simplified version of the Radar de Abandono
+        query = select(Aluno.nome, Aluno.turma, func.avg(Nota.total).label('media'), func.sum(Nota.faltas).label('faltas'))\
+            .join(Nota)\
+            .group_by(Aluno.id)\
+            .having(func.avg(Nota.total) < 50)\
+            .having(func.sum(Nota.faltas) > 10)\
+            .order_by(desc('faltas'))\
+            .limit(10)
+
+        results = session.execute(query).all()
+        
+        if not results:
+            return {"text": "Excelente notícia! O radar não detectou alunos em risco iminente de abandono com os critérios atuais.", "type": "text", "data": None}
+            
+        data = [{"Aluno": r.nome, "Turma": r.turma, "Risco": "Crítico", "Faltas": r.faltas} for r in results]
+        return {
+            "text": f"⚠️ **Alerta de Abandono**: Identifiquei {len(results)} alunos com alta taxa de infrequência e baixas notas. Recomendo intervenção imediata.",
+            "type": "table",
+            "data": data,
+            "chart_config": None
+        }
+
+    def _analyze_missing_grades(self, session: Session, filters: dict) -> AIResponse:
+        """Find students who have disciplinas without grades."""
+        # Simple count of students who have NO grades at all or incomplete ones
+        query = select(Aluno.nome, Aluno.turma, func.count(Nota.id).label('num_notas'))\
+            .outerjoin(Nota)\
+            .group_by(Aluno.id)\
+            .having(func.count(Nota.id) < 5)\
+            .limit(5)
+            
+        results = session.execute(query).all()
+        if not results:
+            return {"text": "Todos os alunos possuem o número esperado de notas lançadas.", "type": "text", "data": None}
+            
+        return {
+            "text": "Estes alunos podem estar com o boletim incompleto (menos de 5 disciplinas lançadas):",
+            "type": "table",
+            "data": [{"Aluno": r.nome, "Turma": r.turma, "Notas": r.num_notas} for r in results]
+        }
+
+
 
 # Singleton instance
 ai_engine = AIAnalystEngine()

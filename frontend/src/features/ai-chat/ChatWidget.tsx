@@ -20,7 +20,8 @@ import {
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
 import { useChatMutation } from "../../lib/api";
 
 type ChartConfig = {
@@ -46,7 +47,16 @@ export const ChatWidget = () => {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "welcome",
-            text: "Olá! Sou o Assistente IA Analítico. Posso gerar gráficos, análises de risco e relatórios. Tente: 'Gráfico de notas do 6A' ou 'Quem está em risco?'.",
+            text: "Olá! Sou o AI FreiRonaldo. Posso gerar gráficos, tabelas e insights sobre:\n" +
+
+                "📊 Gráficos de médias e turmas\n" +
+                "⚠️ Alunos em risco ou com muitas faltas\n" +
+                "🌟 Melhores alunos e destaques\n" +
+                "📢 Mural de avisos e comunicados\n" +
+                "⚖️ Ocorrências e comportamento\n" +
+                "🕵️‍♂️ Radar de abandono escolar\n\n" +
+                "O que deseja analisar agora?",
+
             sender: "bot",
             timestamp: new Date(),
             type: "text"
@@ -74,17 +84,20 @@ export const ChatWidget = () => {
         setInputValue("");
 
         try {
-            // @ts-ignore - response structure updated in backend
             const responseData = await sendMessage({ message: userMsg.text }).unwrap();
+
 
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: responseData.response,
+                text: responseData.text || "Desculpe, não entendi sua solicitação.",
                 sender: "bot",
                 timestamp: new Date(),
-                type: "text" // Simple text for now as chat endpoint returns { response: string }
+                type: responseData.type || "text",
+                data: responseData.data,
+                chart_config: responseData.chart_config
             };
             setMessages((prev) => [...prev, botMsg]);
+
         } catch (error) {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
@@ -111,20 +124,43 @@ export const ChatWidget = () => {
 
     const renderContent = (msg: Message) => {
         if (msg.type === "chart" && msg.data && msg.chart_config) {
+            const COLORS = ["#14b8a6", "#f59e0b", "#ef4444", "#06b6d4"];
             return (
                 <Box sx={{ width: "100%", height: 200, mt: 1 }}>
                     <Typography variant="caption" fontWeight={600} mb={1} display="block">{msg.chart_config.title}</Typography>
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={msg.data}>
-                            <XAxis dataKey={msg.chart_config.xKey} hide />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey={msg.chart_config.yKey} fill={msg.chart_config.color} radius={[4, 4, 0, 0]} />
-                        </BarChart>
+                        {msg.chart_config.type === "pie" ? (
+                            <PieChart>
+                                <Pie
+                                    data={msg.data}
+                                    dataKey={msg.chart_config.yKey}
+                                    nameKey={msg.chart_config.xKey}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={40}
+                                    outerRadius={60}
+                                    paddingAngle={5}
+                                    label={({ name }) => name}
+                                >
+                                    {msg.data.map((_: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        ) : (
+                            <BarChart data={msg.data}>
+                                <XAxis dataKey={msg.chart_config.xKey} hide />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey={msg.chart_config.yKey} fill={msg.chart_config.color || "#14b8a6"} radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        )}
                     </ResponsiveContainer>
                 </Box>
             );
         }
+
 
         if (msg.type === "table" && msg.data && Array.isArray(msg.data)) {
             if (msg.data.length === 0) return null;
@@ -193,8 +229,9 @@ export const ChatWidget = () => {
                         <Box display="flex" alignItems="center" gap={1}>
                             <SmartToyIcon fontSize="small" />
                             <Typography variant="subtitle1" fontWeight={600}>
-                                AI Analyst
+                                AI FreiRonaldo
                             </Typography>
+
                         </Box>
                         <IconButton size="small" onClick={handleToggle} sx={{ color: "white" }}>
                             <CloseIcon fontSize="small" />
