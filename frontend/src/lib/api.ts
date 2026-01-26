@@ -456,6 +456,29 @@ export const api = createApi({
     listAuditLogs: builder.query<{ id: number; action: string; user_id: number; target_type: string; timestamp: string; details?: any }[], void>({
       query: () => "/audit-logs",
       keepUnusedDataFor: 0
+    }),
+    createAluno: builder.mutation<AlunoSummary, Partial<AlunoSummary>>({
+      query: (body) => ({
+        url: "/alunos",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Alunos", "Dashboard", "Turmas"]
+    }),
+    updateAluno: builder.mutation<AlunoSummary, { id: number } & Partial<AlunoSummary>>({
+      query: ({ id, ...body }) => ({
+        url: `/alunos/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: (result, _error, { id }) => ["Alunos", { type: "Alunos", id }, "Dashboard", "Turmas"]
+    }),
+    deleteAluno: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/alunos/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Alunos", "Dashboard", "Turmas"]
     })
   })
 });
@@ -490,5 +513,9 @@ export const {
   useUpdateOcorrenciaMutation,
   useDeleteOcorrenciaMutation,
   useChatMutation,
-  useListAuditLogsQuery
+  useListAuditLogsQuery,
+  useCreateAlunoMutation,
+  useUpdateAlunoMutation,
+  useDeleteAlunoMutation
 } = api;
+

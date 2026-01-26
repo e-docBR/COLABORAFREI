@@ -118,13 +118,20 @@ export const Sidebar = () => {
                 color: "#ffffff",
                 "& .MuiListItemIcon-root": {
                   color: "#ffffff"
+                },
+                "& .MuiListItemText-primary": {
+                  color: "#ffffff"
+                },
+                "&:hover": {
+                  backgroundColor: "primary.dark"
                 }
               },
               "&:hover": {
                 backgroundColor: (theme) => theme.palette.mode === "light"
-                  ? "rgba(20, 184, 166, 0.08)"
-                  : "rgba(20, 184, 166, 0.12)"
+                  ? "rgba(20, 184, 166, 0.04)"
+                  : "rgba(20, 184, 166, 0.08)"
               }
+
             }}
           >
             <ListItemIcon

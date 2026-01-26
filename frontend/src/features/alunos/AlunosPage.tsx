@@ -11,12 +11,19 @@ import {
   Skeleton,
   Stack,
   TextField,
-  Typography
+  Typography,
+  Dialog,
+  DialogContent,
+  DialogTitle
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import { useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
-import { useListAlunosQuery, useListTurmasQuery } from "../../lib/api";
+import { useListAlunosQuery, useListTurmasQuery, useCreateAlunoMutation } from "../../lib/api";
+import { useAppSelector } from "../../app/hooks";
+import { AlunoForm } from "./AlunoForm";
+
 
 const getInitials = (name: string) =>
   name
@@ -45,6 +52,20 @@ export const AlunosPage = () => {
   const [search, setSearch] = useState("");
   const [turno, setTurno] = useState("");
   const [turma, setTurma] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const user = useAppSelector((state) => state.auth.user);
+  const [createAluno, { isLoading: isCreating }] = useCreateAlunoMutation();
+
+  const handleCreate = async (data: any) => {
+    try {
+      await createAluno(data).unwrap();
+      setOpen(false);
+    } catch (error) {
+      console.error("Failed to create aluno", error);
+    }
+  };
+
 
   const {
     data: turmasData,
@@ -69,27 +90,29 @@ export const AlunosPage = () => {
   }, [turmasData]);
 
   const queryParams = useMemo(() => {
-    const params: Record<string, string> = {};
+    const params: Record<string, string> = {
+      per_page: "50"
+    };
     if (turno) params.turno = turno;
     if (turma) params.turma = turma;
+    if (search) params.q = search;
     return params;
-  }, [turno, turma]);
+  }, [turno, turma, search]);
 
-  const { data, isLoading, isError } = useListAlunosQuery(queryParams, {
+
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching: isFetchingAlunos
+  } = useListAlunosQuery(queryParams, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true
   });
 
+
   const alunos = data?.items ?? [];
 
-  const filteredAlunos = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return alunos;
-    return alunos.filter((aluno) =>
-      aluno.nome?.toLowerCase().includes(term) ||
-      aluno.turma?.toLowerCase().includes(term)
-    );
-  }, [alunos, search]);
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
@@ -109,6 +132,30 @@ export const AlunosPage = () => {
           Gestão de estudantes e desempenho acadêmico
         </Typography>
       </Box>
+
+      {user?.role === "admin" && (
+        <Box mb={3} display="flex" justifyContent="flex-end">
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpen(true)}
+          >
+            Novo Aluno
+          </Button>
+        </Box>
+      )}
+
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Cadastrar Novo Aluno</DialogTitle>
+        <DialogContent>
+          <AlunoForm
+            onSubmit={handleCreate}
+            onCancel={() => setOpen(false)}
+            isLoading={isCreating}
+          />
+        </DialogContent>
+      </Dialog>
+
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} mb={3}>
         <TextField
@@ -164,20 +211,22 @@ export const AlunosPage = () => {
       {isError && <Alert severity="error" sx={{ mb: 3 }}>Erro ao carregar alunos</Alert>}
 
       <Grid container spacing={2}>
-        {isLoading || isFetchingTurmas ? (
+        {isLoading || isFetchingTurmas || isFetchingAlunos ? (
           Array.from({ length: 8 }).map((_, i) => (
             <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 1 }} />
             </Grid>
           ))
-        ) : filteredAlunos.length === 0 ? (
+
+        ) : alunos.length === 0 ? (
           <Grid size={12}>
             <Box textAlign="center" py={8}>
               <Typography color="text.secondary">Nenhum aluno encontrado</Typography>
             </Box>
           </Grid>
         ) : (
-          filteredAlunos.map((aluno) => (
+          alunos.map((aluno) => (
+
             <Grid key={aluno.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <Card
                 elevation={0}

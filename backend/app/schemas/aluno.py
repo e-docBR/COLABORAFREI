@@ -40,6 +40,16 @@ class PaginationMeta(BaseModel):
     total: int
     pages: int
 
+class AlunoCreate(AlunoBase):
+    pass
+
+class AlunoUpdate(BaseModel):
+    matricula: Optional[str] = None
+    nome: Optional[str] = None
+    turma: Optional[str] = None
+    turno: Optional[str] = None
+
 class AlunoPaginatedResponse(BaseModel):
     items: List[AlunoListSchema]
     meta: PaginationMeta
+

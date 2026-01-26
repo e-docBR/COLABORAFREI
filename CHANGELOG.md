@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-01-26
+
+### 🚀 Added
+- **Student Management (CRUD)**:
+    - Implemented full Creation, Update, and Deletion of students.
+    - Added `AlunoForm` component for administrative tasks.
+    - Integrated edit and delete actions in `AlunoDetailPage`.
+    - Backend support with new schemas, services, and endpoints for student persistence.
+
+### 🔧 Fixes & Enhancements
+- **🔍 Global Search**: Migrated student search to server-side, enabling discovery of any student in the database regardless of pagination.
+- **🎨 Sidebar Visibility**: Fixed contrast issue in Light Mode where the active menu item label would become invisible.
+- **📊 Real-time Dashboard Sync**: Configured RTK Query tag invalidation to ensure student counts and averages are updated instantly after CRUD operations.
+
 ## [0.4.1] - 2026-01-26
+
 
 ### 🔧 Technical & Bug Fixes
 - **🎨 Shared Theme System**: Implemented `ThemeContext` and global `AppThemeProvider` to ensure dark mode is synchronized across all components.

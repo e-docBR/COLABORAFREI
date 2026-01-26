@@ -53,4 +53,43 @@ def register(parent: Blueprint) -> None:
 
             return jsonify(aluno_detail.model_dump())
 
+    @bp.post("/alunos")
+    @jwt_required()
+    def create_aluno():
+        if "admin" not in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso negado. Apenas administradores podem criar alunos."}), 403
+            
+        data = request.get_json()
+        with session_scope() as session:
+            service = AlunoService(session)
+            aluno = service.create_aluno(data)
+            return jsonify(aluno.model_dump()), 201
+
+    @bp.patch("/alunos/<int:aluno_id>")
+    @jwt_required()
+    def update_aluno(aluno_id: int):
+        if "admin" not in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso negado. Apenas administradores podem editar alunos."}), 403
+            
+        data = request.get_json()
+        with session_scope() as session:
+            service = AlunoService(session)
+            aluno = service.update_aluno(aluno_id, data)
+            if not aluno:
+                return jsonify({"error": "Aluno não encontrado"}), 404
+            return jsonify(aluno.model_dump())
+
+    @bp.delete("/alunos/<int:aluno_id>")
+    @jwt_required()
+    def delete_aluno(aluno_id: int):
+        if "admin" not in (get_jwt().get("roles") or []):
+            return jsonify({"error": "Acesso negado. Apenas administradores podem excluir alunos."}), 403
+            
+        with session_scope() as session:
+            service = AlunoService(session)
+            if service.delete_aluno(aluno_id):
+                return "", 204
+            return jsonify({"error": "Aluno não encontrado"}), 404
+
     parent.register_blueprint(bp)
+

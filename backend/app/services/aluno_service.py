@@ -74,3 +74,31 @@ class AlunoService:
             media=float(media) if media is not None else None,
             notas=notas_schema
         )
+
+    def create_aluno(self, data: dict) -> AlunoListSchema:
+        aluno = self.repository.create(data)
+        return AlunoListSchema(
+            id=aluno.id,
+            matricula=aluno.matricula,
+            nome=aluno.nome,
+            turma=aluno.turma,
+            turno=aluno.turno
+        )
+
+    def update_aluno(self, aluno_id: int, data: dict) -> Optional[AlunoListSchema]:
+        aluno = self.repository.get(aluno_id)
+        if not aluno:
+            return None
+        
+        updated = self.repository.update(aluno, data)
+        return AlunoListSchema(
+            id=updated.id,
+            matricula=updated.matricula,
+            nome=updated.nome,
+            turma=updated.turma,
+            turno=updated.turno
+        )
+
+    def delete_aluno(self, aluno_id: int) -> bool:
+        return self.repository.delete(aluno_id)
+
