@@ -26,7 +26,7 @@ const staffNavItems = [
 
 const alunoNavItems = [{ label: "Meu Boletim", icon: <PeopleIcon />, path: `${appBasePath}/meu-boletim` }];
 
-export const Sidebar = () => {
+export const Sidebar = ({ mobile }: { mobile?: boolean }) => {
   const user = useAppSelector((state) => state.auth.user);
   const isAluno = user?.role === "aluno";
   const isAdmin = Boolean(user?.is_admin || user?.role === "admin");
@@ -57,18 +57,19 @@ export const Sidebar = () => {
       sx={{
         width: 240,
         flexShrink: 0,
-        minHeight: "100vh",
-        borderRight: "1px solid",
+        height: "100%",
+        borderRight: mobile ? "none" : "1px solid",
         borderColor: "divider",
         background: (theme) => theme.palette.mode === "light"
           ? "#ffffff"
           : `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
         color: (theme) => theme.palette.text.primary,
-        display: { xs: "none", md: "flex" },
+        display: mobile ? "flex" : { xs: "none", md: "flex" },
         flexDirection: "column",
         p: 2
       }}
     >
+
       <Box display="flex" alignItems="center" gap={1.5} mb={3} px={1}>
         <Avatar
           sx={{

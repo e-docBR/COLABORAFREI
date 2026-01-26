@@ -197,81 +197,85 @@ export const UsuariosPage = () => {
             </Typography>
           </Stack>
 
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Usuário</TableCell>
-                <TableCell>Perfil</TableCell>
-                <TableCell>Administrador</TableCell>
-                <TableCell>Aluno Vinculado</TableCell>
-                <TableCell>Troca de Senha</TableCell>
-                <TableCell align="right">Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isFetching && !usuarios.length ? (
+          <Box sx={{ overflowX: "auto" }}>
+            <Table size="small">
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Carregando...
-                  </TableCell>
+                  <TableCell>Usuário</TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Perfil</TableCell>
+                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Administrador</TableCell>
+                  <TableCell sx={{ display: { xs: "none", lg: "table-cell" } }}>Aluno Vinculado</TableCell>
+                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Troca de Senha</TableCell>
+                  <TableCell align="right">Ações</TableCell>
                 </TableRow>
-              ) : usuarios.length ? (
-                usuarios.map((usuario) => (
-                  <TableRow key={usuario.id} hover>
-                    <TableCell>
-                      <Stack>
-                        <Typography fontWeight={600}>{usuario.username}</Typography>
-                        {usuario.role && (
-                          <Typography variant="caption" color="text.secondary">
-                            {usuario.role}
-                          </Typography>
-                        )}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>{usuario.role ? roleLabels[usuario.role] ?? usuario.role : "—"}</TableCell>
-                    <TableCell>
-                      <Chip label={usuario.is_admin ? "Sim" : "Não"} color={usuario.is_admin ? "success" : "default"} size="small" />
-                    </TableCell>
-                    <TableCell>
-                      {usuario.aluno ? (
-                        <Stack spacing={0.25}>
-                          <Typography fontWeight={600}>{usuario.aluno.nome}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {usuario.aluno.matricula} • {usuario.aluno.turma} • {usuario.aluno.turno}
-                          </Typography>
-                        </Stack>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={usuario.must_change_password ? "Obrigatório" : "Opcional"}
-                        color={usuario.must_change_password ? "warning" : "default"}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Button size="small" onClick={() => openEditDialog(usuario)}>
-                          Editar
-                        </Button>
-                        <Button size="small" color="error" onClick={() => setDeleteTarget(usuario)}>
-                          Excluir
-                        </Button>
-                      </Stack>
+              </TableHead>
+
+              <TableBody>
+                {isFetching && !usuarios.length ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Carregando...
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Nenhum usuário encontrado.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ) : usuarios.length ? (
+                  usuarios.map((usuario) => (
+                    <TableRow key={usuario.id} hover>
+                      <TableCell>
+                        <Stack>
+                          <Typography fontWeight={600}>{usuario.username}</Typography>
+                          {usuario.role && (
+                            <Typography variant="caption" color="text.secondary">
+                              {usuario.role}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>{usuario.role ? roleLabels[usuario.role] ?? usuario.role : "—"}</TableCell>
+                      <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                        <Chip label={usuario.is_admin ? "Sim" : "Não"} color={usuario.is_admin ? "success" : "default"} size="small" />
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                        {usuario.aluno ? (
+                          <Stack spacing={0.25}>
+                            <Typography fontWeight={600}>{usuario.aluno.nome}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {usuario.aluno.matricula} • {usuario.aluno.turma} • {usuario.aluno.turno}
+                            </Typography>
+                          </Stack>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                        <Chip
+                          label={usuario.must_change_password ? "Obrigatório" : "Opcional"}
+                          color={usuario.must_change_password ? "warning" : "default"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button size="small" onClick={() => openEditDialog(usuario)}>
+                            Editar
+                          </Button>
+                          <Button size="small" color="error" onClick={() => setDeleteTarget(usuario)}>
+                            Excluir
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Nenhum usuário encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Box>
+
 
           <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
             <Typography variant="body2" color="text.secondary">

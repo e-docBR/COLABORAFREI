@@ -1,4 +1,6 @@
-import { Box } from "@mui/material";
+import { Box, Drawer } from "@mui/material";
+import { useState } from "react";
+
 import { Outlet } from "react-router-dom";
 
 import { Sidebar } from "../components/navigation/Sidebar";
@@ -9,8 +11,14 @@ import { Navigate, useLocation } from "react-router-dom";
 import { ChatWidget } from "../features/ai-chat/ChatWidget";
 
 export const DashboardLayout = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
   const location = useLocation();
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
   if (user?.must_change_password) {
     return <Navigate to="/alterar-senha" state={{ from: location }} replace />;
   }
@@ -19,19 +27,29 @@ export const DashboardLayout = () => {
   }
   return (
     <Box display="flex" minHeight="100vh" bgcolor="background.default">
+      {/* Desktop Sidebar */}
       <Sidebar />
-      <Box component="main" flex={1} p={{ xs: 2, md: 4 }}>
-        <TopBar />
+
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": { boxSizing: "border-box", width: 240 }
+        }}
+      >
+        <Sidebar mobile />
+      </Drawer>
+
+      <Box component="main" flex={1} p={{ xs: 2, md: 4 }} sx={{ overflowX: "hidden" }}>
+        <TopBar onMenuClick={handleDrawerToggle} />
         <Outlet />
       </Box>
-      {/* Only show Chat for non-students (staff) or if we want students to have it too? 
-          The requirement said "coordenadores e direção", so let's check permission or just show for now.
-          The user requirement said "Data Chatbot" for natural language querying of school data. Usually for staff.
-          Let's restrict to non-students for now to be safe, or just show it if `user` exists.
-          Let's show it for everyone except maybe students if we want to follow the "staff dashboard" logic.
-          But let's stick to showing it for now, can refine if needed.
-       */}
       {user?.role !== "aluno" && <ChatWidget />}
     </Box>
   );
 };
+

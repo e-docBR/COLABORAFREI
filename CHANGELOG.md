@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-01-26
+
+### 🚀 Added
+- **📱 Mobile First Overhaul**:
+    - Implemented **Responsive Drawer Navigation**: Sidebar now automatically converts to a slide-out drawer on mobile devices.
+    - **Hamburger Menu**: Added an interactive toggle in the TopBar for small screens.
+    - **Adaptive Dashboards**: KPIs and charts now reflow dynamically, with optimized heights for scrolling on smartphones.
+    - **Smart Tables**: Implemented column prioritization in the User Management table to hide non-essential data on mobile, ensuring a clean, legible interface.
+    - **UI Optimization**: Streamlined the TopBar by hiding less critical info on small devices to maximize content workspace.
+
+### 🔧 Fixes & Enhancements
+- **📐 Layout Consistency**: Standardized spacing and transitions across the dashboard layout to eliminate layout shifts during sidebar toggling.
+- **⚡ Performance**: Optimized chart rendering for mobile GPU acceleration.
+
 ## [0.6.0] - 2026-01-26
+
 
 ### 🚀 Added
 - **🤖 AI FreiRonaldo (Advanced Analytics)**:

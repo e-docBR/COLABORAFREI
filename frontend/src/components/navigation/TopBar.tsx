@@ -3,6 +3,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import LogoutIcon from "@mui/icons-material/Logout";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
+import MenuIcon from "@mui/icons-material/Menu";
 import {
   Avatar,
   Badge,
@@ -39,7 +40,7 @@ const ROLE_LABELS: Record<string, string> = {
   aluno: "Aluno"
 };
 
-export const TopBar = () => {
+export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -100,22 +101,31 @@ export const TopBar = () => {
         borderColor: "divider"
       }}
     >
-      {showSearch ? (
-        <TextField
-          placeholder="Buscar alunos, turmas…"
-          size="small"
-          sx={{ maxWidth: 320 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
-          }}
-        />
-      ) : (
-        <Box flex={1} />
-      )}
+      <Box display="flex" alignItems="center" gap={1}>
+        <IconButton
+          color="inherit"
+          onClick={onMenuClick}
+          sx={{ display: { xs: "flex", md: "none" }, ml: -1 }}
+        >
+          <MenuIcon />
+        </IconButton>
+
+        {showSearch && (
+          <TextField
+            placeholder="Buscar alunos, turmas…"
+            size="small"
+            sx={{ maxWidth: { xs: 200, sm: 320 }, display: { xs: "none", sm: "flex" } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }}
+          />
+        )}
+      </Box>
+
       <Box display="flex" alignItems="center" gap={2}>
         {/* Theme Toggle */}
         <ThemeToggle />
@@ -143,7 +153,7 @@ export const TopBar = () => {
           gap={1.5}
           sx={{
             cursor: "pointer",
-            px: 1.5,
+            px: { xs: 0.5, sm: 1.5 },
             py: 0.75,
             borderRadius: 1,
             transition: "all 0.2s",
@@ -159,8 +169,8 @@ export const TopBar = () => {
           <Avatar
             src={user?.photo_url ? `${import.meta.env.VITE_API_BASE_URL || "/api/v1"}${user.photo_url.replace("/api/v1", "")}` : undefined}
             sx={{
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               bgcolor: "primary.main",
               fontSize: "0.875rem",
               fontWeight: 700
@@ -168,7 +178,7 @@ export const TopBar = () => {
           >
             {getInitials(user?.username)}
           </Avatar>
-          <Box textAlign="left">
+          <Box textAlign="left" sx={{ display: { xs: "none", sm: "block" } }}>
             <Typography variant="body2" fontWeight={600} fontSize="0.875rem">
               {user?.username ?? "Usuário ativo"}
             </Typography>
@@ -227,3 +237,4 @@ export const TopBar = () => {
     </Box>
   );
 };
+

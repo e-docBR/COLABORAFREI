@@ -232,7 +232,8 @@ export const DashboardPage = () => {
                 Top 10 disciplinas por média geral
               </Typography>
             </Box>
-            <CardContent sx={{ p: 3, height: 400 }}>
+            <CardContent sx={{ p: 3, height: { xs: 300, md: 400 } }}>
+
               {isDisciplinasLoading ? (
                 <Skeleton variant="rectangular" height="100%" />
               ) : isDisciplinasError ? (
@@ -292,7 +293,8 @@ export const DashboardPage = () => {
                 Distribuição por status
               </Typography>
             </Box>
-            <CardContent sx={{ p: 3, height: 400 }}>
+            <CardContent sx={{ p: 3, height: { xs: 300, md: 400 } }}>
+
               {isSituacaoLoading ? (
                 <Skeleton variant="circular" width={200} height={200} sx={{ mx: "auto" }} />
               ) : isSituacaoError ? (
