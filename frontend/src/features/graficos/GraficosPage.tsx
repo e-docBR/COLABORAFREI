@@ -19,7 +19,11 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  useTheme,
+  Paper,
+  Divider,
+  Fade
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -28,6 +32,8 @@ import PieChartIcon from "@mui/icons-material/PieChart";
 import GridOnIcon from "@mui/icons-material/GridOn";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import EqualizerIcon from "@mui/icons-material/Equalizer";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
   Bar,
   BarChart,
@@ -40,9 +46,16 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Cell
+  Cell,
+  Legend,
+  Area,
+  AreaChart,
+  Scatter,
+  ScatterChart,
+  ZAxis
 } from "recharts";
-
+import ScatterPlotIcon from "@mui/icons-material/ScatterPlot";
+import InsightsIcon from "@mui/icons-material/Insights";
 import {
   useGetGraficoQuery,
   useGetNotasFiltrosQuery,
@@ -51,14 +64,22 @@ import {
 } from "../../lib/api";
 import { CHARTS, CHARTS_BY_SLUG, type ChartSlug, TRIMESTRES, TURNOS } from "./config";
 
-const BAR_COLOR = "#6E44FF";
-const PIE_COLORS = ["#6E44FF", "#F06EFF", "#4CC9F0", "#FFD166"];
+// Professional palette - Sharp Academic Precision
+const COLORS = [
+  "#14b8a6", // Teal-500 (Primary)
+  "#10b981", // Emerald-500 (Secondary)
+  "#06b6d4", // Cyan-500
+  "#f59e0b", // Amber-500
+  "#ef4444", // Red-500
+  "#8b5cf6", // Violet-500 (accent only)
+  "#64748b", // Slate-500
+];
 
 const STATUS_COLORS: Record<string, string> = {
-  "Aprovado": "#6E44FF",
-  "Recuperação": "#FFD166",
-  "Reprovado": "#FF4444",
-  "Outros": "#CCCCCC"
+  "Aprovado": "#10b981",     // Emerald
+  "Recuperação": "#f59e0b", // Amber
+  "Reprovado": "#ef4444",   // Red
+  "Outros": "#94a3b8"       // Slate
 };
 
 const CHART_ICONS: Record<string, React.ElementType> = {
@@ -67,10 +88,14 @@ const CHART_ICONS: Record<string, React.ElementType> = {
   "turmas-trimestre": TimelineIcon,
   "situacao-distribuicao": PieChartIcon,
   "faltas-por-turma": BarChartIcon,
-  "heatmap-disciplinas": GridOnIcon
+  "heatmap-disciplinas": GridOnIcon,
+  "gauss-escola": InsightsIcon,
+  "correlacao-frequencia": ScatterPlotIcon,
+  "evolucao-turnos": TimelineIcon,
 };
 
 export const GraficosPage = () => {
+  const theme = useTheme();
   const [chartSlug, setChartSlug] = useState<ChartSlug>("disciplinas-medias");
   const [turno, setTurno] = useState("");
   const [serie, setSerie] = useState("");
@@ -147,17 +172,48 @@ export const GraficosPage = () => {
     setDisciplina("");
   };
 
+  const CustomChartTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <Card sx={{ p: 1.5, boxShadow: theme.shadows[4], border: "none", backgroundColor: "rgba(255, 255, 255, 0.95)" }}>
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>{label}</Typography>
+          {payload.map((entry: any, index: number) => (
+            <Box key={index} display="flex" alignItems="center" gap={1} mb={0.5}>
+              <Box width={8} height={8} borderRadius="50%" bgcolor={entry.color || entry.fill} />
+              <Typography variant="body2" color="text.secondary">
+                {entry.name}: <span style={{ fontWeight: 600, color: theme.palette.text.primary }}>{entry.value}</span>
+              </Typography>
+            </Box>
+          ))}
+        </Card>
+      );
+    }
+    return null;
+  };
+
   const renderChart = () => {
     if (chart.type === "pie") {
       return (
-        <ResponsiveContainer width="100%" height={360}>
+        <ResponsiveContainer width="100%" height={400}>
           <PieChart>
-            <Tooltip formatter={(value) => `${value} alunos`} />
-            <Pie data={rawData} dataKey={chart.valueKey ?? "total"} nameKey="situacao" label>
+            <Tooltip content={<CustomChartTooltip />} />
+            <Legend verticalAlign="bottom" height={36} />
+            <Pie
+              data={rawData}
+              dataKey={chart.valueKey ?? "total"}
+              nameKey="situacao"
+              cx="50%"
+              cy="50%"
+              innerRadius={80}
+              outerRadius={120}
+              paddingAngle={2}
+              data={rawData}
+            >
               {rawData.map((entry: any, index: number) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={STATUS_COLORS[entry.situacao] || PIE_COLORS[index % PIE_COLORS.length]} 
+                <Cell
+                  key={`cell-${index}`}
+                  fill={STATUS_COLORS[entry.situacao] || COLORS[index % COLORS.length]}
+                  strokeWidth={0}
                 />
               ))}
             </Pie>
@@ -168,28 +224,123 @@ export const GraficosPage = () => {
 
     if (chart.type === "line") {
       return (
-        <ResponsiveContainer width="100%" height={360}>
-          <LineChart data={rawData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="trimestre" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey={chart.yKey ?? "media"} stroke={BAR_COLOR} strokeWidth={3} />
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={rawData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+            <XAxis
+              dataKey={chart.type === "line" && chart.slug === "evolucao-turnos" ? "periodo" : "trimestre"} // Adaptation for multiple line charts
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+              dy={10}
+            />
+            <YAxis
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomChartTooltip />} cursor={{ stroke: theme.palette.divider, strokeWidth: 1 }} />
+            {chart.slug === "evolucao-turnos" ? (
+              // Hardcoded assumption for this specific chart based on data structure
+              <>
+                <Line type="monotone" dataKey="matutino" name="Matutino" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="vespertino" name="Vespertino" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} />
+                <Legend />
+              </>
+            ) : (
+              <Line
+                type="monotone"
+                dataKey={chart.yKey ?? "media"}
+                stroke={COLORS[0]}
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 7 }}
+              />
+            )}
+
           </LineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (chart.type === "area") {
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <AreaChart data={rawData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+            <XAxis
+              dataKey={chart.xKey}
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomChartTooltip />} />
+            <Area
+              type="monotone"
+              dataKey={chart.yKey ?? "value"}
+              stroke={COLORS[0]}
+              fillOpacity={1}
+              fill="url(#colorValue)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (chart.type === "scatter") {
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+            <XAxis
+              type="number"
+              dataKey={chart.xKey}
+              name="Frequência"
+              unit="%"
+              domain={[0, 100]}
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="number"
+              dataKey={chart.yKey}
+              name="Média"
+              domain={[0, 20]}
+              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <ZAxis type="number" range={[100, 100]} />
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+            <Legend />
+            <Scatter name="Alunos" data={rawData} fill={COLORS[0]} />
+          </ScatterChart>
         </ResponsiveContainer>
       );
     }
 
     if (chart.type === "heatmap" && heatmap) {
       return (
-        <TableContainer>
+        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Turma</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Turma</TableCell>
                 {heatmap.disciplinas.map((disciplina) => (
-                  <TableCell key={disciplina} align="center">
-                    {disciplina}
+                  <TableCell key={disciplina} align="center" sx={{ fontWeight: 600, color: "text.secondary", fontSize: "0.75rem" }}>
+                    {disciplina.substring(0, 3).toUpperCase()}
                   </TableCell>
                 ))}
               </TableRow>
@@ -197,14 +348,34 @@ export const GraficosPage = () => {
             <TableBody>
               {heatmap.turmas.map((turmaNome) => (
                 <TableRow key={turmaNome} hover>
-                  <TableCell>{turmaNome}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{turmaNome}</TableCell>
                   {heatmap.disciplinas.map((disciplina) => {
                     const value = heatmap.values.get(`${turmaNome}-${disciplina}`) ?? 0;
-                    const intensity = Math.min(1, Math.max(0, value / 20));
-                    const background = `rgba(110, 68, 255, ${0.1 + 0.5 * intensity})`;
+                    // Color scale blue -> white -> red ?? No, usually heatmap is one color.
+                    // Let's use opacity of Primary Color.
+                    const intensity = Math.min(1, Math.max(0, value / 100)); // assumes 0-100 scale
+
+                    // Simple heatmap logic: <50 red, >70 green, else yellow
+                    let bgColor = "transparent";
+                    let textColor = theme.palette.text.primary;
+
+                    if (value > 0) {
+                      if (value < 60) bgColor = "#fee2e2"; // Red 100
+                      else if (value < 80) bgColor = "#fef9c3"; // Yellow 100
+                      else bgColor = "#dcfce7"; // Green 100
+                    }
+
                     return (
-                      <TableCell key={`${turmaNome}-${disciplina}`} align="center" sx={{ backgroundColor: background }}>
-                        {value.toFixed(1)}
+                      <TableCell
+                        key={`${turmaNome}-${disciplina}`}
+                        align="center"
+                        sx={{
+                          backgroundColor: bgColor,
+                          color: textColor,
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <Typography variant="caption" fontWeight={600}>{value.toFixed(1)}</Typography>
                       </TableCell>
                     );
                   })}
@@ -217,13 +388,30 @@ export const GraficosPage = () => {
     }
 
     return (
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart data={rawData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={chart.xKey ?? "disciplina"} />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey={chart.yKey ?? "media"} fill={BAR_COLOR} radius={6} />
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart data={rawData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }} barSize={32}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+          <XAxis
+            dataKey={chart.xKey ?? "disciplina"}
+            tick={{ fill: theme.palette.text.secondary, fontSize: 11 }}
+            interval={0}
+            angle={-30}
+            textAnchor="end"
+            height={60}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip content={<CustomChartTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+          <Bar
+            dataKey={chart.yKey ?? "media"}
+            fill={COLORS[0]}
+            radius={[4, 4, 0, 0]}
+          />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -232,241 +420,204 @@ export const GraficosPage = () => {
   const hasData = rawData.length > 0 || chart.type === "heatmap";
 
   return (
-    <Stack spacing={3}>
+    <Box sx={{ minHeight: "100vh" }}>
+      {/* Header - Compact */}
+      <Box mb={3}>
+        <Typography
+          variant="h3"
+          fontWeight={800}
+          sx={{
+            letterSpacing: "-0.02em",
+            color: "text.primary",
+            mb: 0.5
+          }}
+        >
+          Análise Visual
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Exploração profunda de dados com métricas interativas
+        </Typography>
+      </Box>
+
       <Grid container spacing={2}>
-        {CHARTS.map((chartItem) => {
-          const isActive = chartItem.slug === chartSlug;
-          const Icon = CHART_ICONS[chartItem.slug] ?? BarChartIcon;
+        {/* Navigation / Selection Panel */}
+        <Grid size={{ xs: 12, lg: 3 }}>
+          <Stack spacing={2}>
+            <Typography variant="overline" color="text.secondary" fontWeight={700} pl={1}>
+              Disponíveis ({CHARTS.length})
+            </Typography>
+            {CHARTS.map((chartItem) => {
+              const isActive = chartItem.slug === chartSlug;
+              const Icon = CHART_ICONS[chartItem.slug] ?? BarChartIcon;
 
-          return (
-            <Grid key={chartItem.slug} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-              <Card
-                variant={isActive ? "elevation" : "outlined"}
-                sx={{
-                  height: "100%",
-                  borderRadius: 3,
-                  borderColor: isActive ? "primary.main" : "divider",
-                  boxShadow: isActive ? "0 4px 12px rgba(110, 68, 255, 0.15)" : "none",
-                  background: isActive
-                    ? "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)"
-                    : "background.paper",
-                  position: "relative",
-                  overflow: "visible",
-                  transition: "all 0.3s ease",
-                  borderWidth: isActive ? 2 : 1,
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                    borderColor: "primary.main"
-                  }
-                }}
-              >
-                <CardActionArea
+              return (
+                <Card
+                  key={chartItem.slug}
+                  elevation={0}
                   sx={{
-                    height: "100%",
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    justifyContent: "flex-start"
+                    borderRadius: 1,
+                    bgcolor: isActive ? "background.paper" : "transparent",
+                    border: "1px solid",
+                    borderColor: isActive ? "primary.main" : "transparent",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      bgcolor: "background.paper",
+                      transform: "translateX(2px)",
+                      borderColor: isActive ? "primary.main" : "divider"
+                    }
                   }}
-                  onClick={() => setChartSlug(chartItem.slug)}
                 >
-                  <Box
-                    sx={{
-                      p: 1,
-                      borderRadius: 2,
-                      bgcolor: isActive ? "primary.main" : "action.hover",
-                      color: isActive ? "common.white" : "text.secondary",
-                      mb: 1.5,
-                      transition: "all 0.3s ease"
-                    }}
+                  <CardActionArea
+                    onClick={() => setChartSlug(chartItem.slug)}
+                    sx={{ p: 2, display: "flex", alignItems: "center", gap: 2, justifyContent: "flex-start" }}
                   >
-                    <Icon fontSize="small" />
+                    <Box
+                      sx={{
+                        p: 0.75,
+                        borderRadius: 1,
+                        bgcolor: isActive ? `${theme.palette.primary.main}10` : "action.hover",
+                        color: isActive ? "primary.main" : "text.secondary"
+                      }}
+                    >
+                      <Icon fontSize="small" color={isActive ? "primary" : "inherit"} />
+                    </Box>
+                    <Box flex={1} minWidth={0}>
+                      <Typography variant="body2" fontWeight={600} fontSize="0.875rem" color={isActive ? "primary.main" : "text.primary"} noWrap>
+                        {chartItem.title}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" fontSize="0.75rem" sx={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {chartItem.description}
+                      </Typography>
+                    </Box>
+                  </CardActionArea>
+                </Card>
+              );
+            })}
+          </Stack>
+        </Grid>
+
+        {/* Main Chart Area */}
+        <Grid size={{ xs: 12, lg: 9 }}>
+          <Stack spacing={3}>
+            {/* Filters Toolbar */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "divider",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 2,
+                alignItems: "center"
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={1} mr="auto">
+                <FilterListIcon color="action" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={600} fontSize="0.875rem">Filtros</Typography>
+              </Box>
+
+              <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" } }} />
+
+              {chart.supportsTurno && (
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Turno</InputLabel>
+                  <Select value={turno} label="Turno" onChange={(e) => setTurno(e.target.value)}>
+                    <MenuItem value="">Todos</MenuItem>
+                    {TURNOS.map((i) => <MenuItem key={i.value} value={i.value}>{i.label}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              )}
+
+              {chart.supportsSerie && (
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Série</InputLabel>
+                  <Select value={serie} label="Série" onChange={(e) => setSerie(e.target.value)}>
+                    <MenuItem value="">Todas</MenuItem>
+                    {serieOptions.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              )}
+
+              {chart.supportsTurma && (
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Turma</InputLabel>
+                  <Select value={turma} label="Turma" onChange={(e) => setTurma(e.target.value)}>
+                    <MenuItem value="">Todas</MenuItem>
+                    {turmaOptions.map((o) => <MenuItem key={o.turma} value={o.turma}>{o.turma}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              )}
+
+              {chart.supportsDisciplina && (
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Disciplina</InputLabel>
+                  <Select value={disciplina} label="Disciplina" onChange={(e) => setDisciplina(e.target.value)}>
+                    <MenuItem value="">Todas</MenuItem>
+                    {disciplinaOptions.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              )}
+
+              {chart.supportsTrimestre && (
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Trimestre</InputLabel>
+                  <Select value={trimestre} label="Trimestre" onChange={(e) => setTrimestre(e.target.value)}>
+                    {TRIMESTRES.map((i) => <MenuItem key={i.value} value={i.value}>{i.label}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              )}
+
+              <Button
+                startIcon={<RestartAltIcon />}
+                onClick={handleReset}
+                variant="outlined"
+                size="small"
+                sx={{ ml: "auto", borderStyle: "dashed", borderRadius: 2 }}
+                disabled={!turno && !serie && !turma && !disciplina && trimestre === "3"}
+              >
+                Limpar
+              </Button>
+            </Paper>
+
+            {/* Chart Card */}
+            <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+              <Box p={2.5} borderBottom="1px solid" borderColor="divider" bgcolor={(theme) => theme.palette.mode === "light" ? "grey.50" : "grey.900"}>
+                <Typography variant="h6" fontWeight={700} fontSize="1.125rem">
+                  {chart.title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" fontSize="0.75rem" mt={0.5}>
+                  {chart.description}
+                </Typography>
+              </Box>
+
+              <CardContent sx={{ p: 3, minHeight: 450 }}>
+                <Fade in={!isLoading && !isFetching} timeout={500}>
+                  <Box width="100%" height="100%">
+                    {isLoading || isFetching ? (
+                      <Stack alignItems="center" justifyContent="center" height={400} spacing={2}>
+                        <CircularProgress thickness={4} />
+                        <Typography color="text.secondary" variant="caption">Carregando dados...</Typography>
+                      </Stack>
+                    ) : isError ? (
+                      <Alert severity="error" variant="outlined">Não foi possível carregar os dados visualizados.</Alert>
+                    ) : hasData ? (
+                      renderChart()
+                    ) : (
+                      <Stack alignItems="center" justifyContent="center" height={400} spacing={2} bgcolor="background.paper" borderRadius={3} border="1px dashed" borderColor="divider">
+                        <ShowChartIcon sx={{ fontSize: 60, color: "divider" }} />
+                        <Typography color="text.secondary">Nenhum dado encontrado com os filtros atuais.</Typography>
+                        <Button variant="text" onClick={handleReset}>Redefinir Filtros</Button>
+                      </Stack>
+                    )}
                   </Box>
-
-                  <Typography
-                    variant="subtitle2"
-                    fontWeight={700}
-                    gutterBottom
-                    color={isActive ? "text.primary" : "text.primary"}
-                    lineHeight={1.2}
-                  >
-                    {chartItem.title}
-                  </Typography>
-
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, flex: 1, lineHeight: 1.4 }}>
-                    {chartItem.description}
-                  </Typography>
-
-                  <Stack direction="row" gap={0.5} flexWrap="wrap">
-                    {chartItem.supportsTurno && (
-                      <Chip label="Turno" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-                    )}
-                    {chartItem.supportsSerie && (
-                      <Chip label="Série" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-                    )}
-                    {chartItem.supportsTurma && (
-                      <Chip label="Turma" size="small" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-                    )}
-                    {chartItem.supportsDisciplina && (
-                      <Chip
-                        label="Disc."
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: "0.65rem", height: 20 }}
-                      />
-                    )}
-                    {chartItem.supportsTrimestre && (
-                      <Chip
-                        label="Trim."
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: "0.65rem", height: 20 }}
-                      />
-                    )}
-                  </Stack>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          );
-        })}
+                </Fade>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
       </Grid>
-
-      <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
-        {chart.supportsTurno && (
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="turno-label" shrink>
-              Turno
-            </InputLabel>
-            <Select
-              labelId="turno-label"
-              label="Turno"
-              value={turno}
-              onChange={(event) => setTurno(event.target.value)}
-            >
-              <MenuItem value="">Todos</MenuItem>
-              {TURNOS.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {chart.supportsSerie && (
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="serie-label" shrink>
-              Série
-            </InputLabel>
-            <Select
-              labelId="serie-label"
-              label="Série"
-              value={serie}
-              onChange={(event) => setSerie(event.target.value)}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {serieOptions.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {chart.supportsTurma && (
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel id="turma-label" shrink>
-              Turma
-            </InputLabel>
-            <Select
-              labelId="turma-label"
-              label="Turma"
-              value={turma}
-              onChange={(event) => setTurma(event.target.value)}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {turmaOptions.map((option) => (
-                <MenuItem key={option.turma} value={option.turma}>
-                  {option.turma}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {chart.supportsDisciplina && (
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel id="disciplina-label" shrink>
-              Disciplina
-            </InputLabel>
-            <Select
-              labelId="disciplina-label"
-              label="Disciplina"
-              value={disciplina}
-              onChange={(event) => setDisciplina(event.target.value)}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {disciplinaOptions.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {chart.supportsTrimestre && (
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel id="trimestre-label" shrink>
-              Trimestre
-            </InputLabel>
-            <Select
-              labelId="trimestre-label"
-              label="Trimestre"
-              value={trimestre}
-              onChange={(event) => setTrimestre(event.target.value)}
-            >
-              {TRIMESTRES.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        <Button onClick={handleReset} disabled={!turno && !serie && !turma && !disciplina && trimestre === "3"}>
-          Limpar filtros
-        </Button>
-      </Stack>
-
-      <Card>
-        <CardContent>
-          <Typography variant="h6" fontWeight={600} mb={1}>
-            {chart.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            {chart.description}
-          </Typography>
-
-          {isLoading || isFetching ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight={280}>
-              <CircularProgress />
-            </Box>
-          ) : isError ? (
-            <Alert severity="error">Não foi possível carregar o gráfico.</Alert>
-          ) : hasData ? (
-            renderChart()
-          ) : (
-            <Box textAlign="center" py={6}>
-              <Typography color="text.secondary">Sem dados para os filtros selecionados.</Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Stack>
+    </Box>
   );
 };

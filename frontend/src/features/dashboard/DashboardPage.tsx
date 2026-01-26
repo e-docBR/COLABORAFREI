@@ -1,16 +1,35 @@
 import { useMemo } from "react";
-import { Alert, Box, Card, CardContent, Grid2 as Grid, Skeleton, Typography } from "@mui/material";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
+import {
+  Alert,
+  Box,
+  Card,
+  CardContent,
+  Grid2 as Grid,
+  Skeleton,
+  Typography,
+  Stack,
+  useTheme,
+  Chip
+} from "@mui/material";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from "recharts";
+import GroupsIcon from "@mui/icons-material/Groups";
+import SchoolIcon from "@mui/icons-material/School";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 
 import { useGetDashboardKpisQuery, useGetGraficoQuery } from "../../lib/api";
-
-const lineData = [
-  { trimestre: "1º", media: 14.8 },
-  { trimestre: "2º", media: 15.1 },
-  { trimestre: "3º", media: 15.4 }
-];
-
-const pieColors = ["#18b26b", "#f5a524", "#ff5c5c"];
 
 const formatNumber = new Intl.NumberFormat("pt-BR");
 
@@ -18,16 +37,26 @@ type KpiCard = {
   label: string;
   value: number;
   helper: string;
+  icon: React.ElementType;
+  color: string;
+  trend?: string;
   formatter?: (value: number) => string;
 };
 
 export const DashboardPage = () => {
+  const theme = useTheme();
   const { data, isLoading, isError } = useGetDashboardKpisQuery();
   const {
     data: situacaoResponse,
     isLoading: isSituacaoLoading,
     isError: isSituacaoError
   } = useGetGraficoQuery({ slug: "situacao-distribuicao" });
+
+  const {
+    data: disciplinasResponse,
+    isLoading: isDisciplinasLoading,
+    isError: isDisciplinasError
+  } = useGetGraficoQuery({ slug: "disciplinas-medias" });
 
   const situacaoChartData = useMemo(
     () =>
@@ -44,127 +73,252 @@ export const DashboardPage = () => {
   );
 
   const isSituacaoEmpty = !isSituacaoLoading && situacaoChartData.length === 0;
+  const disciplinasData = useMemo(() => {
+    const dados = disciplinasResponse?.dados || [];
+    return [...dados].sort((a: any, b: any) => b.media - a.media).slice(0, 10);
+  }, [disciplinasResponse]);
+
+  const isDisciplinasEmpty = !isDisciplinasLoading && disciplinasData.length === 0;
 
   const kpiCards: KpiCard[] = [
     {
       label: "Total de Alunos",
       value: data?.total_alunos ?? 0,
-      helper: "Estudantes ativos"
+      helper: "Estudantes ativos",
+      icon: GroupsIcon,
+      color: theme.palette.primary.main,
+      trend: "+12% vs ano anterior"
     },
     {
       label: "Turmas Ativas",
       value: data?.total_turmas ?? 0,
-      helper: "Séries monitoradas"
-    },
-    {
-      label: "Alunos em Risco",
-      value: data?.alunos_em_risco ?? 0,
-      helper: "Notas abaixo de 15"
+      helper: "Séries monitoradas",
+      icon: SchoolIcon,
+      color: theme.palette.success.main,
+      trend: "Estável"
     },
     {
       label: "Média Geral",
       value: data?.media_geral ?? 0,
-      helper: "Média dos Totais",
-      formatter: (value: number) => value.toFixed(1)
+      helper: "Desempenho acadêmico",
+      icon: AssessmentIcon,
+      color: theme.palette.info.main,
+      formatter: (val) => val.toFixed(1)
+    },
+    {
+      label: "Em Risco",
+      value: data?.alunos_risco ?? 0,
+      helper: "Média < 12",
+      icon: WarningAmberIcon,
+      color: theme.palette.warning.main
     }
   ];
 
-  return (
-    <Box display="flex" flexDirection="column" gap={3}>
-      {isError && <Alert severity="error">Não foi possível carregar os KPIs em tempo real.</Alert>}
+  const COLORS = {
+    Aprovado: theme.palette.success.main,
+    Recuperação: theme.palette.warning.main,
+    Reprovado: theme.palette.error.main,
+    Outros: theme.palette.grey[500]
+  };
 
-      <Grid container spacing={2}>
-        {kpiCards.map((card) => (
-          <Grid key={card.label} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Card sx={{ background: "linear-gradient(135deg, #0b1f3a 0%, #112a54 100%)", color: "white" }}>
-              <CardContent>
-                <Typography variant="overline" color="rgba(255,255,255,0.7)" fontWeight={600}>
-                  {card.label}
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" height={42} sx={{ bgcolor: "rgba(255,255,255,0.16)" }} />
-                ) : (
-                  <Typography variant="h4" fontWeight={600} mt={1}>
+  if (isError) {
+    return (
+      <Box sx={{ minHeight: "100vh", p: 3 }}>
+        <Alert severity="error">Erro ao carregar dados do dashboard</Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ minHeight: "100vh" }}>
+      <Box mb={3}>
+        <Typography
+          variant="h3"
+          fontWeight={800}
+          sx={{
+            letterSpacing: "-0.02em",
+            color: "text.primary",
+            mb: 0.5
+          }}
+        >
+          Dashboard
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Visão geral do desempenho acadêmico
+        </Typography>
+      </Box>
+
+      <Grid container spacing={2} mb={3}>
+        {kpiCards.map((card, index) => (
+          <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
+            {isLoading ? (
+              <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1 }} />
+            ) : (
+              <Card
+                elevation={0}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  height: "100%",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: 1
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 2.5 }}>
+                  <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={1.5}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        bgcolor: `${card.color}10`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: card.color
+                      }}
+                    >
+                      <card.icon fontSize="small" />
+                    </Box>
+                    {card.trend && (
+                      <Chip
+                        label={card.trend}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.625rem",
+                          fontWeight: 600
+                        }}
+                      />
+                    )}
+                  </Stack>
+                  <Typography variant="h4" fontWeight={700} fontSize="1.75rem" mb={0.5}>
                     {card.formatter ? card.formatter(card.value) : formatNumber.format(card.value)}
                   </Typography>
-                )}
-                <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                  {card.helper}
-                </Typography>
-              </CardContent>
-            </Card>
+                  <Typography variant="body2" fontWeight={600} fontSize="0.875rem" color="text.primary" mb={0.25}>
+                    {card.label}
+                  </Typography>
+                  <Typography variant="caption" fontSize="0.75rem" color="text.secondary">
+                    {card.helper}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
           </Grid>
         ))}
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" mb={2}>
-                Evolução das médias trimestrais
+          <Card
+            elevation={0}
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              height: "100%"
+            }}
+          >
+            <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
+              <Typography variant="h6" fontWeight={700} fontSize="1.125rem">
+                Desempenho por Disciplina
               </Typography>
-              <Box height={280}>
+              <Typography variant="caption" fontSize="0.75rem" color="text.secondary">
+                Top 10 disciplinas por média geral
+              </Typography>
+            </Box>
+            <CardContent sx={{ p: 3, height: 400 }}>
+              {isDisciplinasLoading ? (
+                <Skeleton variant="rectangular" height="100%" />
+              ) : isDisciplinasError ? (
+                <Alert severity="error">Erro ao carregar dados</Alert>
+              ) : isDisciplinasEmpty ? (
+                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                  <Typography color="text.secondary">Sem dados disponíveis</Typography>
+                </Box>
+              ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineData}>
-                    <XAxis dataKey="trimestre" />
-                    <YAxis domain={[12, 18]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="media" stroke="#0066ff" strokeWidth={3} dot={{ r: 6 }} />
-                  </LineChart>
+                  <BarChart data={disciplinasData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                    <XAxis
+                      dataKey="disciplina"
+                      tick={{ fill: theme.palette.text.secondary, fontSize: 11 }}
+                      interval={0}
+                      angle={-30}
+                      textAnchor="end"
+                      height={80}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: 4
+                      }}
+                    />
+                    <Bar dataKey="media" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
-              </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
+
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" mb={2}>
-                Situação geral
+          <Card
+            elevation={0}
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              height: "100%"
+            }}
+          >
+            <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
+              <Typography variant="h6" fontWeight={700} fontSize="1.125rem">
+                Situação dos Alunos
               </Typography>
-              <Box height={320} display="flex" alignItems="center" justifyContent="center">
-                {isSituacaoError && (
-                  <Alert severity="error">Não foi possível carregar a distribuição das situações.</Alert>
-                )}
-                {!isSituacaoError && (
-                  <Box height="100%" width="100%" display="flex" alignItems="center" justifyContent="center">
-                    {isSituacaoLoading ? (
-                      <Skeleton variant="circular" width={200} height={200} />
-                    ) : isSituacaoEmpty ? (
-                      <Typography color="text.secondary">Sem dados para o período selecionado.</Typography>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 16, right: 16, bottom: 32, left: 16 }}>
-                          <Pie
-                            data={situacaoChartData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={70}
-                            outerRadius={105}
-                            paddingAngle={2}
-                            cx="45%"
-                            cy="45%"
-                            labelLine={false}
-                          >
-                            {situacaoChartData.map((entry, index) => (
-                              <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} alunos`} />
-                          <Legend
-                            layout="horizontal"
-                            verticalAlign="bottom"
-                            align="center"
-                            iconSize={10}
-                            wrapperStyle={{ marginTop: 8 }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    )}
-                  </Box>
-                )}
-              </Box>
+              <Typography variant="caption" fontSize="0.75rem" color="text.secondary">
+                Distribuição por status
+              </Typography>
+            </Box>
+            <CardContent sx={{ p: 3, height: 400 }}>
+              {isSituacaoLoading ? (
+                <Skeleton variant="circular" width={200} height={200} sx={{ mx: "auto" }} />
+              ) : isSituacaoError ? (
+                <Alert severity="error">Erro ao carregar dados</Alert>
+              ) : isSituacaoEmpty ? (
+                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                  <Typography color="text.secondary">Sem dados disponíveis</Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={situacaoChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {situacaoChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || COLORS.Outros} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </Grid>

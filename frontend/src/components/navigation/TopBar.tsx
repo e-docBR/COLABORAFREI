@@ -22,6 +22,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logout, updateUser } from "../../features/auth/authSlice";
 import { useUploadPhotoMutation } from "../../lib/api";
+import { ThemeToggle } from "./ThemeToggle";
 
 const getInitials = (value?: string) =>
   value
@@ -92,56 +93,90 @@ export const TopBar = () => {
         alignItems: "center",
         justifyContent: "space-between",
         gap: 2,
-        mb: 3
+        mb: 3,
+        pb: 2,
+        borderBottom: "1px solid",
+        borderColor: "divider"
       }}
     >
       {showSearch ? (
         <TextField
           placeholder="Buscar alunos, turmas…"
           size="small"
+          sx={{ maxWidth: 320 }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon fontSize="small" />
               </InputAdornment>
-            ),
-            sx: { backgroundColor: "background.paper", borderRadius: 999 }
+            )
           }}
         />
       ) : (
         <Box flex={1} />
       )}
       <Box display="flex" alignItems="center" gap={2}>
-        <IconButton color="inherit">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notifications */}
+        <IconButton
+          color="inherit"
+          size="small"
+          sx={{
+            transition: "all 0.2s",
+            "&:hover": {
+              bgcolor: "action.hover"
+            }
+          }}
+        >
           <Badge color="error" variant="dot">
-            <NotificationsIcon />
+            <NotificationsIcon fontSize="small" />
           </Badge>
         </IconButton>
-        <Box textAlign="right">
-          <Typography variant="body2" fontWeight={600}>
-            {user?.username ?? "Usuário ativo"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {ROLE_LABELS[user?.role?.toLowerCase() ?? ""] ?? "Perfil padrão"}
-          </Typography>
-        </Box>
+
+        {/* User Menu */}
         <Box
           display="flex"
           alignItems="center"
-          gap={1}
-          sx={{ cursor: "pointer" }}
+          gap={1.5}
+          sx={{
+            cursor: "pointer",
+            px: 1.5,
+            py: 0.75,
+            borderRadius: 1,
+            transition: "all 0.2s",
+            "&:hover": {
+              bgcolor: "action.hover"
+            }
+          }}
           onClick={handleMenuOpen}
           aria-controls={menuOpen ? "user-menu" : undefined}
           aria-haspopup="true"
           aria-expanded={menuOpen ? "true" : undefined}
         >
-          <Avatar src={user?.photo_url ? `${import.meta.env.VITE_API_BASE_URL || "/api/v1"}${user.photo_url.replace("/api/v1", "")}` : undefined}>
+          <Avatar
+            src={user?.photo_url ? `${import.meta.env.VITE_API_BASE_URL || "/api/v1"}${user.photo_url.replace("/api/v1", "")}` : undefined}
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: "primary.main",
+              fontSize: "0.875rem",
+              fontWeight: 700
+            }}
+          >
             {getInitials(user?.username)}
           </Avatar>
-          <Typography variant="caption" color="text.secondary">
-            Menu
-          </Typography>
+          <Box textAlign="left">
+            <Typography variant="body2" fontWeight={600} fontSize="0.875rem">
+              {user?.username ?? "Usuário ativo"}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
+              {ROLE_LABELS[user?.role?.toLowerCase() ?? ""] ?? "Perfil padrão"}
+            </Typography>
+          </Box>
         </Box>
+
         <Menu
           id="user-menu"
           anchorEl={anchorEl}
@@ -149,6 +184,15 @@ export const TopBar = () => {
           onClose={handleMenuClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
+          slotProps={{
+            paper: {
+              sx: {
+                mt: 1,
+                minWidth: 200,
+                borderRadius: 1
+              }
+            }
+          }}
         >
           <Box px={2} py={1.5}>
             <Typography variant="body2" fontWeight={600}>

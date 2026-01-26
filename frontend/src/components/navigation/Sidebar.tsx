@@ -30,71 +30,133 @@ export const Sidebar = () => {
   const user = useAppSelector((state) => state.auth.user);
   const isAluno = user?.role === "aluno";
   const isAdmin = Boolean(user?.is_admin || user?.role === "admin");
+
   const items = useMemo(() => {
     if (isAluno) return alunoNavItems;
     const base = [...staffNavItems];
+
     if (isAdmin) {
       base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
       base.push({ label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` });
       base.push({ label: "Audit Logs", icon: <ArticleIcon />, path: `${appBasePath}/audit-logs` });
     }
-    // Add Professor Dashboard for admin or professor
+
     if (isAdmin || user?.role === "professor") {
       base.push({ label: "Visão Professor", icon: <InsightsIcon />, path: `${appBasePath}/professor` });
     }
-    // Add Comunicados for everyone (Staff manages, Students read - but students have different list)
-    // Actually, students have it in MeuBoletim? No, implementation plan says "Aba/Seção" there, but let's make it consistent.
-    // If student, add to their list. If staff, add to theirs.
 
-    // For staff:
     base.splice(1, 0, { label: "Comunicados", icon: <NotificationsIcon />, path: `${appBasePath}/comunicados` });
     base.splice(2, 0, { label: "Ocorrências", icon: <WarningAmberIcon />, path: `${appBasePath}/ocorrencias` });
 
     return base;
-  }, [isAluno, isAdmin]);
+  }, [isAluno, isAdmin, user?.role]);
+
   return (
     <Box
       component="aside"
       sx={{
-        width: 280,
+        width: 240,
         flexShrink: 0,
         minHeight: "100vh",
-        borderRight: 1,
+        borderRight: "1px solid",
         borderColor: "divider",
-        background: "linear-gradient(180deg, #050d22 0%, #0f1f3d 100%)",
-        color: "white",
+        background: (theme) => theme.palette.mode === "light"
+          ? "#ffffff"
+          : `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+        color: (theme) => theme.palette.text.primary,
         display: { xs: "none", md: "flex" },
         flexDirection: "column",
-        p: 3
+        p: 2
       }}
     >
-      <Box display="flex" alignItems="center" gap={1} mb={3}>
-        <Avatar sx={{ bgcolor: "#0bd0ff" }}>FR</Avatar>
-        <Box>
-          <Typography fontWeight={600}>Colégio Frei Ronaldo</Typography>
-          <Typography variant="caption" color="rgba(255,255,255,0.7)">Boletins Inteligentes</Typography>
+      <Box display="flex" alignItems="center" gap={1.5} mb={3} px={1}>
+        <Avatar
+          sx={{
+            bgcolor: "primary.main",
+            width: 36,
+            height: 36,
+            fontSize: "0.875rem",
+            fontWeight: 700
+          }}
+        >
+          FR
+        </Avatar>
+        <Box flex={1}>
+          <Typography
+            fontWeight={700}
+            fontSize="0.9375rem"
+            lineHeight={1.3}
+            color="text.primary"
+          >
+            Colégio Frei Ronaldo
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            fontSize="0.75rem"
+          >
+            Boletins Inteligentes
+          </Typography>
         </Box>
       </Box>
-      <List sx={{ flex: 1 }}>
+
+      <List sx={{ flex: 1, px: 1 }}>
         {items.map((item) => (
           <ListItemButton
             key={item.path}
             component={NavLink}
             to={item.path}
             sx={{
-              borderRadius: 2,
+              borderRadius: 1,
               mb: 0.5,
-              "&.active": { backgroundColor: "rgba(255,255,255,0.08)" }
+              px: 1.5,
+              py: 1,
+              minHeight: 40,
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&.active": {
+                backgroundColor: "primary.main",
+                color: "#ffffff",
+                "& .MuiListItemIcon-root": {
+                  color: "#ffffff"
+                }
+              },
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.mode === "light"
+                  ? "rgba(20, 184, 166, 0.08)"
+                  : "rgba(20, 184, 166, 0.12)"
+              }
             }}
           >
-            <ListItemIcon sx={{ color: "inherit" }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} />
+            <ListItemIcon
+              sx={{
+                color: "inherit",
+                minWidth: 36,
+                "& svg": {
+                  fontSize: "1.25rem"
+                }
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText
+              primary={item.label}
+              primaryTypographyProps={{
+                fontSize: "0.875rem",
+                fontWeight: 500
+              }}
+            />
           </ListItemButton>
         ))}
       </List>
-      <Divider sx={{ borderColor: "rgba(255,255,255,0.2)", my: 2 }} />
-      <Box>
-        <Typography variant="caption" color="rgba(255,255,255,0.6)">
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box px={2}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          fontSize="0.6875rem"
+        >
           v2.0.0 — 2025
         </Typography>
       </Box>

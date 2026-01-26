@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-01-25
+
+### 🚀 Added
+- **Intelligent Reporting Engine**:
+    - **Radar de Abandono**: Predictive report identifying students at high risk of dropout based on attendance and grade trends.
+    - **Top Movers**: Trend analysis identifying students with significant performance shifts (up/down).
+    - **Eficiência Docente**: Diagnostic report comparing Class vs School averages per discipline.
+- **Client-Side Analytics**:
+    - Implemented `selectors.ts` for real-time data derivation (Risk Score, Trend Delta).
+- **Enhanced Visualizations**:
+    - Added support for `Area`, `Scatter`, and `Bar` charts in the reporting module.
+    - Integrated `recharts` for dynamic data visualization.
+
+### 🎨 UI/UX Improvements
+- **Mural de Avisos**: Redesigned as a modern, social-media style feed with pinned items and semantic icons.
+- **Ocorrências**: Transformed into a card-based interface with visual status indicators (Resolved/Pending).
+- **Boletim Escolar**: Modernized DataGrid with conditional grade formatting (Red/Amber/Green).
+
+### 🔧 Technical
+- **Codebase Optimization**:
+    - Migrated report configurations to `config.tsx` to support JSX rendering.
+    - Refactored `GraficosPage` and `RelatorioDetailPage` for better component separation and rendering logic.
+
 ## [0.2.0] - 2026-01-13
 
 ### 🚀 Added
@@ -65,6 +88,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Dashboard Improvements**:
     - Updated "Média Geral" card label to "Média dos Totais" for clarity.
+    - Added "Comparativo de médias por disciplina" (Subject Averages) BarChart to Dashboard.
+    - Updated "Situação Geral" PieChart to specific categories: Aprovado, Reprovado, Outros.
+    - Removed "Evolução das médias trimestrais" LineChart.
 
 ### Added
 - **Ocorrências System Improvements**:

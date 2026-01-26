@@ -48,150 +48,212 @@ export const AlunosPage = () => {
 
   const turnoOptions = useMemo(() => {
     const items = turmasData?.items ?? [];
-    return Array.from(new Set(items.map((item) => item.turno))).sort();
+    const turnos = new Set<string>();
+    items.forEach((item) => {
+      if (item.turno) turnos.add(item.turno);
+    });
+    return Array.from(turnos).sort();
   }, [turmasData]);
 
   const turmaOptions = useMemo(() => {
     const items = turmasData?.items ?? [];
-    return Array.from(new Set(items.map((item) => item.turma))).sort();
+    return items.map((t) => t.turma).sort();
   }, [turmasData]);
 
-  const filters = useMemo(
-    () => ({
-      q: search.trim() || undefined,
-      turno: turno || undefined,
-      turma: turma || undefined
-    }),
-    [search, turno, turma]
-  );
+  const queryParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    if (turno) params.turno = turno;
+    if (turma) params.turma = turma;
+    return params;
+  }, [turno, turma]);
 
-  const { data, isFetching, isError } = useListAlunosQuery(filters);
+  const { data, isLoading, isError } = useListAlunosQuery(queryParams, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true
+  });
+
   const alunos = data?.items ?? [];
 
+  const filteredAlunos = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return alunos;
+    return alunos.filter((aluno) =>
+      aluno.nome?.toLowerCase().includes(term) ||
+      aluno.turma?.toLowerCase().includes(term)
+    );
+  }, [alunos, search]);
+
   return (
-    <Box display="flex" flexDirection="column" gap={3}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid size={{ xs: 12, md: 5 }}>
-          <TextField
-            label="Nome ou matrícula"
-            fullWidth
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            InputProps={{ sx: { borderRadius: 3 } }}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
-          <TextField
-            label="Turno"
-            select
-            SelectProps={{ native: true, displayEmpty: true }}
-            value={turno}
-            onChange={(event) => setTurno(event.target.value)}
-            fullWidth
-            sx={{ minWidth: 160, borderRadius: 3 }}
-            InputLabelProps={{ shrink: true }}
+    <Box sx={{ minHeight: "100vh" }}>
+      <Box mb={3}>
+        <Typography
+          variant="h3"
+          fontWeight={800}
+          sx={{
+            letterSpacing: "-0.02em",
+            color: "text.primary",
+            mb: 0.5
+          }}
+        >
+          Alunos
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Gestão de estudantes e desempenho acadêmico
+        </Typography>
+      </Box>
+
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} mb={3}>
+        <TextField
+          placeholder="Buscar aluno..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+          sx={{ flex: 1 }}
+        />
+        <TextField
+          select
+          label="Turno"
+          value={turno}
+          onChange={(e) => setTurno(e.target.value)}
+          size="small"
+          sx={{ minWidth: 120 }}
+          SelectProps={{ native: true }}
+        >
+          <option value="">Todos</option>
+          {turnoOptions.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Turma"
+          value={turma}
+          onChange={(e) => setTurma(e.target.value)}
+          size="small"
+          sx={{ minWidth: 140 }}
+          SelectProps={{ native: true }}
+        >
+          <option value="">Todas</option>
+          {turmaOptions.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </TextField>
+        {(search || turno || turma) && (
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSearch("");
+              setTurno("");
+              setTurma("");
+            }}
+            size="small"
           >
-            <option value="">Todos</option>
-            {turnoOptions.map((value) => (
-              <option key={value} value={value} disabled={isFetchingTurmas && !turnoOptions.length}>
-                {value}
-              </option>
-            ))}
-          </TextField>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
-          <TextField
-            label="Turma"
-            select
-            SelectProps={{ native: true, displayEmpty: true }}
-            value={turma}
-            onChange={(event) => setTurma(event.target.value)}
-            fullWidth
-            sx={{ minWidth: 160, borderRadius: 3 }}
-            InputLabelProps={{ shrink: true }}
-          >
-            <option value="">Todas</option>
-            {turmaOptions.map((value) => (
-              <option key={value} value={value} disabled={isFetchingTurmas && !turmaOptions.length}>
-                {value}
-              </option>
-            ))}
-          </TextField>
-        </Grid>
-        <Grid size={{ xs: 12, md: 2 }} display="flex" justifyContent={{ xs: "stretch", md: "flex-end" }}>
-          <Button variant="contained" color="primary" fullWidth sx={{ borderRadius: 3, minHeight: 48 }}>
-            Novo Aluno
+            Limpar
           </Button>
-        </Grid>
-      </Grid>
+        )}
+      </Stack>
 
-      {isError && <Alert severity="error">Não foi possível carregar a lista de alunos.</Alert>}
+      {isError && <Alert severity="error" sx={{ mb: 3 }}>Erro ao carregar alunos</Alert>}
 
-      <Card>
-        <CardContent>
-          <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" mb={2}>
-            <Typography variant="h6">{`Alunos (${data?.meta.total ?? 0})`}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Página {data?.meta.page ?? 1} · {data?.meta.per_page ?? 20} por página
-            </Typography>
-          </Stack>
-
-          {isFetching && !alunos.length ? (
-            <Grid container spacing={2}>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <Grid key={index} size={{ xs: 12, md: 6, lg: 3 }}>
-                  <Skeleton variant="rounded" height={160} />
-                </Grid>
-              ))}
+      <Grid container spacing={2}>
+        {isLoading || isFetchingTurmas ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 1 }} />
             </Grid>
-          ) : alunos.length ? (
-            <Grid container spacing={2}>
-              {alunos.map((aluno) => (
-                <Grid key={aluno.id} size={{ xs: 12, md: 6, lg: 3 }}>
-                  <Card variant="outlined" sx={{ borderRadius: 4, height: "100%" }}>
-                    <CardActionArea
-                      component={RouterLink}
-                      to={`/app/alunos/${aluno.id}`}
-                      sx={{ height: "100%" }}
-                    >
-                      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                        <Stack direction="row" alignItems="center" gap={1.5}>
-                          <Avatar>{getInitials(aluno.nome)}</Avatar>
-                          <Box>
-                            <Typography fontWeight={600}>{aluno.nome}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {aluno.turma} • {aluno.turno}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          Matrícula: {aluno.matricula}
-                        </Typography>
-                        <Chip
-                          label={
-                            aluno.media !== undefined && aluno.media !== null
-                              ? `Média ${aluno.media.toFixed(1)}`
-                              : "Sem média"
-                          }
-                          color={getMediaColor(aluno.media)}
-                          size="small"
-                        />
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Box textAlign="center" py={6}>
-              <Typography variant="body1" color="text.secondary">
-                Nenhum aluno encontrado para os filtros selecionados.
-              </Typography>
+          ))
+        ) : filteredAlunos.length === 0 ? (
+          <Grid size={12}>
+            <Box textAlign="center" py={8}>
+              <Typography color="text.secondary">Nenhum aluno encontrado</Typography>
             </Box>
-          )}
-        </CardContent>
-      </Card>
+          </Grid>
+        ) : (
+          filteredAlunos.map((aluno) => (
+            <Grid key={aluno.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Card
+                elevation={0}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  height: "100%",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: 1
+                  }
+                }}
+              >
+                <CardActionArea
+                  component={RouterLink}
+                  to={`/app/alunos/${aluno.id}`}
+                  sx={{ height: "100%" }}
+                >
+                  <CardContent sx={{ p: 2 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="flex-start" mb={1.5}>
+                      <Avatar
+                        sx={{
+                          bgcolor: "primary.main",
+                          width: 40,
+                          height: 40,
+                          fontSize: "0.875rem",
+                          fontWeight: 700
+                        }}
+                      >
+                        {getInitials(aluno.nome ?? "")}
+                      </Avatar>
+                      <Box flex={1} minWidth={0}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          fontSize="0.875rem"
+                          noWrap
+                          mb={0.25}
+                        >
+                          {aluno.nome}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          fontSize="0.75rem"
+                          color="text.secondary"
+                          noWrap
+                        >
+                          {aluno.turma}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={aluno.media_geral !== null && aluno.media_geral !== undefined
+                          ? `Média: ${aluno.media_geral.toFixed(1)}`
+                          : "Sem média"}
+                        size="small"
+                        color={getMediaColor(aluno.media_geral)}
+                        sx={{
+                          height: 20,
+                          fontSize: "0.625rem",
+                          fontWeight: 600
+                        }}
+                      />
+                      {aluno.faltas !== null && aluno.faltas !== undefined && aluno.faltas > 0 && (
+                        <Chip
+                          label={`${aluno.faltas} faltas`}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.625rem"
+                          }}
+                        />
+                      )}
+                    </Stack>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          ))
+        )}
+      </Grid>
     </Box>
   );
 };

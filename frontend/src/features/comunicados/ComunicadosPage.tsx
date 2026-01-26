@@ -11,11 +11,8 @@ import {
     DialogTitle,
     Divider,
     FormControl,
-    Grid,
+    Grid2 as Grid,
     InputLabel,
-    List,
-    ListItem,
-    ListItemText,
     MenuItem,
     Select,
     Stack,
@@ -25,13 +22,24 @@ import {
     Menu,
     MenuItem as MuiMenuItem,
     ListItemIcon,
-    Chip
+    Chip,
+    Avatar,
+    useTheme,
+    Fade
 } from "@mui/material";
 import { useState } from "react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArchiveIcon from "@mui/icons-material/Archive";
+import AddIcon from "@mui/icons-material/Add";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import SchoolIcon from "@mui/icons-material/School";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PersonIcon from "@mui/icons-material/Person";
+import PushPinIcon from "@mui/icons-material/PushPin"; // Pinnned
+import HistoryIcon from "@mui/icons-material/History"; // Archived
+
 import {
     useCreateComunicadoMutation,
     useListComunicadosQuery,
@@ -41,6 +49,7 @@ import {
 import { useAppSelector } from "../../app/hooks";
 
 export const ComunicadosPage = () => {
+    const theme = useTheme();
     const { data: comunicados, isLoading } = useListComunicadosQuery();
     const [createComunicado, { isLoading: isCreating }] = useCreateComunicadoMutation();
     const [updateComunicado] = useUpdateComunicadoMutation();
@@ -97,8 +106,7 @@ export const ComunicadosPage = () => {
         setEditingId(menuComunicado.id);
         setTitulo(menuComunicado.titulo);
         setConteudo(menuComunicado.conteudo);
-        setTargetType("TODOS"); // Simplified as we probably don't edit target often or it's complex
-        // Ideally we parse target from string, but for now let's focus on content
+        setTargetType("TODOS");
         setOpen(true);
         handleCloseMenu();
     };
@@ -120,64 +128,184 @@ export const ComunicadosPage = () => {
         handleCloseMenu();
     };
 
+    // Sort: Pinned/Active first, then by date desc
+    const sortedComunicados = [...(comunicados ?? [])].sort((a, b) => {
+        if (a.arquivado && !b.arquivado) return 1;
+        if (!a.arquivado && b.arquivado) return -1;
+        return new Date(b.data_envio).getTime() - new Date(a.data_envio).getTime();
+    });
+
+    const getTargetIcon = (type?: string) => {
+        switch (type) {
+            case "TURMA": return <GroupsIcon fontSize="small" />;
+            case "ALUNO": return <PersonIcon fontSize="small" />;
+            default: return <SchoolIcon fontSize="small" />;
+        }
+    };
+
+    const getTargetLabel = (type?: string, value?: string) => {
+        switch (type) {
+            case "TURMA": return `Turma: ${value}`;
+            case "ALUNO": return `Aluno: ${value}`;
+            default: return "Todos";
+        }
+    };
+
     return (
-        <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4" fontWeight={700}>
-                    Mural de Avisos
-                </Typography>
+        <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh", background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(0,0,0,0.02) 100%)" }}>
+            {/* Header */}
+            <Box mb={5} display="flex" justifyContent="space-between" alignItems="flex-end">
+                <Box>
+                    <Typography
+                        variant="h3"
+                        fontWeight={800}
+                        sx={{
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            letterSpacing: "-0.03em",
+                            color: "text.primary",
+                            mb: 1
+                        }}
+                    >
+                        Mural de Avisos
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Comunicação oficial entre escola, alunos e professores.
+                    </Typography>
+                </Box>
                 {isAdmin && (
-                    <Button variant="contained" onClick={() => { resetForm(); setOpen(true); }}>
+                    <Button
+                        variant="contained"
+                        onClick={() => { resetForm(); setOpen(true); }}
+                        startIcon={<AddIcon />}
+                        sx={{
+                            borderRadius: 3,
+                            px: 3,
+                            py: 1.2,
+                            fontWeight: 700,
+                            textTransform: "none",
+                            boxShadow: theme.shadows[4],
+                            background: "linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)",
+                        }}
+                    >
                         Novo Comunicado
                     </Button>
                 )}
-            </Stack>
+            </Box>
 
             {isLoading ? (
-                <CircularProgress />
-            ) : (
-                <Grid container spacing={2}>
-                    {comunicados?.map((comm) => (
-                        <Grid item xs={12} key={comm.id}>
-                            <Card sx={{ opacity: comm.arquivado ? 0.6 : 1 }}>
-                                <CardHeader
-                                    action={
-                                        isAdmin && (
-                                            <IconButton onClick={(e) => handleOpenMenu(e, comm)}>
-                                                <MoreVertIcon />
-                                            </IconButton>
-                                        )
-                                    }
-                                    title={
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {comm.titulo}
-                                            {comm.arquivado && <Chip label="Arquivado" size="small" />}
-                                        </Box>
-                                    }
-                                    subheader={`${new Date(comm.data_envio).toLocaleString()} • Por: ${comm.autor}`}
-                                />
-                                <Divider />
-                                <CardContent>
-                                    <Typography variant="body1" style={{ whiteSpace: "pre-wrap" }}>
-                                        {comm.conteudo}
-                                    </Typography>
-                                </CardContent>
-                            </Card>
+                <Grid container spacing={3}>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <Grid key={index} size={12}>
+                            <Box sx={{ p: 3, bgcolor: "background.paper", borderRadius: 4 }}>
+                                <Fade in={true}><CircularProgress /></Fade>
+                            </Box>
                         </Grid>
                     ))}
-
-                    {comunicados?.length === 0 && (
-                        <Grid item xs={12}>
-                            <Typography color="text.secondary">Nenhum comunicado encontrado.</Typography>
-                        </Grid>
-                    )}
                 </Grid>
+            ) : (
+                <Stack spacing={3}>
+                    {sortedComunicados.map((comm) => (
+                        <Card
+                            key={comm.id}
+                            elevation={0}
+                            sx={{
+                                borderRadius: 4,
+                                border: "1px solid",
+                                borderColor: comm.arquivado ? "transparent" : "divider",
+                                bgcolor: comm.arquivado ? "action.hover" : "background.paper",
+                                opacity: comm.arquivado ? 0.7 : 1,
+                                transition: "all 0.3s ease",
+                                position: "relative",
+                                overflow: "visible",
+                                "&:hover": {
+                                    borderColor: "primary.main",
+                                    transform: comm.arquivado ? "none" : "translateY(-2px)",
+                                    boxShadow: comm.arquivado ? "none" : theme.shadows[2]
+                                }
+                            }}
+                        >
+                            {/* Pin or Archive Indicator */}
+                            {comm.arquivado ? (
+                                <Box position="absolute" top={-10} right={20} sx={{ bgcolor: "text.disabled", color: "white", borderRadius: "50%", p: 0.5, zIndex: 2 }}>
+                                    <HistoryIcon fontSize="small" />
+                                </Box>
+                            ) : (
+                                <Box position="absolute" top={-10} right={20} sx={{ bgcolor: "warning.main", color: "white", borderRadius: "50%", p: 0.5, zIndex: 2 }}>
+                                    <PushPinIcon fontSize="small" sx={{ transform: "rotate(45deg)" }} />
+                                </Box>
+                            )}
+
+                            <CardHeader
+                                sx={{ pb: 1 }}
+                                avatar={
+                                    <Avatar sx={{ bgcolor: comm.arquivado ? "action.disabled" : "primary.main" }}>
+                                        <CampaignIcon />
+                                    </Avatar>
+                                }
+                                action={
+                                    isAdmin && (
+                                        <IconButton onClick={(e) => handleOpenMenu(e, comm)}>
+                                            <MoreVertIcon />
+                                        </IconButton>
+                                    )
+                                }
+                                title={
+                                    <Typography variant="h6" fontWeight={700}>
+                                        {comm.titulo}
+                                    </Typography>
+                                }
+                                subheader={
+                                    <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {new Date(comm.data_envio).toLocaleDateString()} às {new Date(comm.data_envio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">•</Typography>
+                                        <Chip
+                                            icon={getTargetIcon(comm.target_type)}
+                                            label={getTargetLabel(comm.target_type, comm.target_value)}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ height: 20, fontSize: "0.65rem", borderColor: "divider" }}
+                                        />
+                                        <Typography variant="caption" color="text.secondary">•</Typography>
+                                        <Typography variant="caption" fontWeight={600} color="primary.main">
+                                            {comm.autor}
+                                        </Typography>
+                                    </Stack>
+                                }
+                            />
+                            <CardContent sx={{ pt: 1, pb: 3 }}>
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        whiteSpace: "pre-wrap",
+                                        color: comm.arquivado ? "text.secondary" : "text.primary",
+                                        lineHeight: 1.6
+                                    }}
+                                >
+                                    {comm.conteudo}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {sortedComunicados.length === 0 && (
+                        <Box textAlign="center" py={8} bgcolor="background.paper" borderRadius={4} border="1px dashed" borderColor="divider">
+                            <CampaignIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2, opacity: 0.5 }} />
+                            <Typography variant="h6" color="text.secondary">Nenhum comunicado publicado</Typography>
+                        </Box>
+                    )}
+                </Stack>
             )}
 
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleCloseMenu}
+                PaperProps={{
+                    elevation: 3,
+                    sx: { borderRadius: 3, minWidth: 150 }
+                }}
             >
                 <MuiMenuItem onClick={handleEdit}>
                     <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
@@ -187,50 +315,95 @@ export const ComunicadosPage = () => {
                     <ListItemIcon><ArchiveIcon fontSize="small" color="action" /></ListItemIcon>
                     {menuComunicado?.arquivado ? "Desarquivar" : "Arquivar"}
                 </MuiMenuItem>
+                <Divider />
                 <MuiMenuItem onClick={handleDelete}>
                     <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-                    <Typography color="error">Excluir</Typography>
+                    <Typography color="error" variant="body2" fontWeight={600}>Excluir</Typography>
                 </MuiMenuItem>
             </Menu>
 
-            <Dialog open={open} onClose={() => { setOpen(false); resetForm(); }} fullWidth maxWidth="sm">
-                <DialogTitle>{editingId ? "Editar Comunicado" : "Novo Comunicado"}</DialogTitle>
+            <Dialog
+                open={open}
+                onClose={() => { setOpen(false); resetForm(); }}
+                fullWidth
+                maxWidth="sm"
+                PaperProps={{ sx: { borderRadius: 4 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 700 }}>
+                    {editingId ? "Editar Comunicado" : "Novo Comunicado"}
+                </DialogTitle>
                 <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <TextField label="Título" fullWidth value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+                    <Stack spacing={3} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Título do aviso"
+                            fullWidth
+                            value={titulo}
+                            onChange={(e) => setTitulo(e.target.value)}
+                            placeholder="Ex: Reunião de Pais"
+                            variant="outlined"
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Destinatário</InputLabel>
+                            <Select
+                                value={targetType}
+                                label="Destinatário"
+                                onChange={(e) => setTargetType(e.target.value)}
+                                renderValue={(selected) => (
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        {getTargetIcon(selected)}
+                                        {selected === "TODOS" ? "Todos (Escola Inteira)" : selected === "TURMA" ? "Turma Específica" : "Aluno Específico"}
+                                    </Box>
+                                )}
+                            >
+                                <MenuItem value="TODOS">
+                                    <ListItemIcon><SchoolIcon fontSize="small" /></ListItemIcon>
+                                    Todos (Escola Inteira)
+                                </MenuItem>
+                                <MenuItem value="TURMA">
+                                    <ListItemIcon><GroupsIcon fontSize="small" /></ListItemIcon>
+                                    Turma Específica
+                                </MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {targetType === "TURMA" && (
+                            <TextField
+                                label="Nome da Turma"
+                                fullWidth
+                                value={targetValue}
+                                onChange={(e) => setTargetValue(e.target.value)}
+                                placeholder="Ex: 9º ANO A"
+                                helperText="Digite exatamente o nome da turma"
+                            />
+                        )}
+
                         <TextField
                             label="Mensagem"
                             fullWidth
                             multiline
-                            rows={4}
+                            rows={6}
                             value={conteudo}
                             onChange={(e) => setConteudo(e.target.value)}
+                            placeholder="Escreva sua mensagem aqui..."
                         />
-
-                        {!editingId && (
-                            <FormControl fullWidth>
-                                <InputLabel>Destinatário</InputLabel>
-                                <Select value={targetType} label="Destinatário" onChange={(e) => setTargetType(e.target.value)}>
-                                    <MenuItem value="TODOS">Todos (Escola Inteira)</MenuItem>
-                                    <MenuItem value="TURMA">Turma Específica</MenuItem>
-                                </Select>
-                            </FormControl>
-                        )}
-                        {targetType === "TURMA" && (
-                            <TextField
-                                label="Nome da Turma (Ex: 9º ANO A)"
-                                fullWidth
-                                value={targetValue}
-                                onChange={(e) => setTargetValue(e.target.value)}
-                                helperText="Digite o nome exato da turma"
-                            />
-                        )}
                     </Stack>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => { setOpen(false); resetForm(); }}>Cancelar</Button>
-                    <Button onClick={handleSave} variant="contained" disabled={isCreating}>
-                        {editingId ? "Salvar" : "Enviar"}
+                <DialogActions sx={{ p: 3 }}>
+                    <Button onClick={() => { setOpen(false); resetForm(); }} sx={{ borderRadius: 2, fontWeight: 600 }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleSave}
+                        variant="contained"
+                        disabled={isCreating}
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: 700,
+                            px: 4,
+                            background: "linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)"
+                        }}
+                    >
+                        {editingId ? "Salvar Alterações" : "Publicar Aviso"}
                     </Button>
                 </DialogActions>
             </Dialog>

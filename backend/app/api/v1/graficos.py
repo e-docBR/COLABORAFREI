@@ -182,10 +182,7 @@ def _situacao_distribuicao(
     for aluno_id, status_set in aluno_status_set.items():
         # Se tem alguma reprovação
         if not status_set.isdisjoint(STATUS_REPROVADO):
-            if is_past_cutoff:
-                aluno_situacoes[aluno_id] = "Reprovado"
-            else:
-                aluno_situacoes[aluno_id] = "Recuperação"
+            aluno_situacoes[aluno_id] = "Reprovado"
         # Se não tem reprovação, mas tem aprovação
         elif not status_set.isdisjoint(STATUS_APROVADO):
             aluno_situacoes[aluno_id] = "Aprovado"
@@ -199,7 +196,7 @@ def _situacao_distribuicao(
     
     return [
         {"situacao": label, "total": quantidade}
-        for label, quantidade in data.items()
+        for label, quantidade in sorted(data.items())
     ]
 
 

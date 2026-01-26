@@ -4,13 +4,16 @@ export type ChartSlug =
   | "situacao-distribuicao"
   | "faltas-por-turma"
   | "heatmap-disciplinas"
-  | "medias-por-trimestre";
+  | "medias-por-trimestre"
+  | "gauss-escola"
+  | "correlacao-frequencia"
+  | "evolucao-turnos";
 
 export type ChartDefinition = {
   slug: ChartSlug;
   title: string;
   description: string;
-  type: "bar" | "line" | "pie" | "heatmap";
+  type: "bar" | "line" | "pie" | "heatmap" | "area" | "scatter";
   xKey?: string;
   yKey?: string;
   valueKey?: string;
@@ -82,6 +85,34 @@ export const CHARTS: ChartDefinition[] = [
     supportsTurma: true,
     supportsTrimestre: true,
     maxItems: 50
+  },
+  {
+    slug: "gauss-escola",
+    title: "Curva de Gauss (Distribuição)",
+    description: "Análise da normalidade das notas da escola.",
+    type: "area",
+    xKey: "faixa",
+    yKey: "alunos",
+    supportsTurno: true,
+    supportsSerie: true,
+    supportsDisciplina: true
+  },
+  {
+    slug: "correlacao-frequencia",
+    title: "Correlação: Freq. vs Notas",
+    description: "Identificação de quadrantes de risco e performance.",
+    type: "scatter",
+    xKey: "frequencia",
+    yKey: "media",
+    supportsTurno: true,
+    supportsSerie: true
+  },
+  {
+    slug: "evolucao-turnos",
+    title: "Evolução Comparativa de Turnos",
+    description: "Performance Matutino vs Vespertino/Noturno ao longo do tempo.",
+    type: "line",
+    supportsDisciplina: true
   }
 ];
 

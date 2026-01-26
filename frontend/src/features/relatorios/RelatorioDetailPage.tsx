@@ -24,6 +24,25 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import { useGetNotasFiltrosQuery, useGetRelatorioQuery, useListTurmasQuery } from "../../lib/api";
 import { RELATORIOS_BY_SLUG, type RelatorioSlug } from "./config";
+import { useDerivedRelatorio } from "./selectors";
+import {
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  ZAxis,
+  Tooltip,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
+  BarChart,
+  Bar,
+  CartesianGrid
+} from "recharts";
 
 const DEFAULT_FILTERS = { turno: "", serie: "", turma: "", disciplina: "" };
 
@@ -118,9 +137,12 @@ export const RelatorioDetailPage = () => {
     }
     : undefined;
 
-  const { data, isLoading, isError, isFetching } = useGetRelatorioQuery(queryArgs ?? { slug: "" }, {
-    skip: !slug || !definition || !queryArgs
+  const derivedResult = useDerivedRelatorio(slug, sanitizedFilters);
+  const standardResult = useGetRelatorioQuery(queryArgs ?? { slug: "" }, {
+    skip: !slug || !definition || !queryArgs || !!derivedResult
   });
+
+  const { data, isLoading, isError, isFetching } = derivedResult || standardResult;
 
   const rows = Array.isArray(data?.dados) ? data!.dados : [];
   const hasRows = rows.length > 0;
@@ -327,6 +349,8 @@ export const RelatorioDetailPage = () => {
             <ScatterVisual data={rows} />
           ) : definition.type === "radar" ? (
             <RadarVisual data={rows} />
+          ) : definition.type === "bar" ? (
+            <BarVisual data={rows} />
           ) : null}
         </CardContent>
       </Card>
@@ -335,21 +359,7 @@ export const RelatorioDetailPage = () => {
 };
 
 // --- Visualization Components ---
-import {
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  ZAxis,
-  Tooltip,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Legend
-} from "recharts";
+
 
 const HeatmapVisual = ({ data }: { data: any[] }) => {
   // Map strings to numbers for axis
@@ -404,18 +414,18 @@ const HeatmapVisual = ({ data }: { data: any[] }) => {
 const ScatterVisual = ({ data }: { data: any[] }) => (
   <ResponsiveContainer width="100%" height={400}>
     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
-      <XAxis type="number" dataKey="faltas" name="Faltas" unit="" />
+      // Check data keys
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis type="number" dataKey="frequencia" name="Frequência" unit="%" domain={[0, 100]} />
       <YAxis type="number" dataKey="media" name="Média" unit="" domain={[0, 100]} />
       <Tooltip cursor={{ strokeDasharray: '3 3' }} />
       <Legend />
-      <Scatter name="Alunos" data={data} fill="#8884d8" shape="circle" />
+      <Scatter name="Alunos" data={data} fill="#8884d8" />
     </ScatterChart>
   </ResponsiveContainer>
 );
 
 const RadarVisual = ({ data }: { data: any[] }) => {
-  // Recharts Radar needs uniform metric scale. 
-  // Assiduity is 0-100, Media is 0-100.
   return (
     <ResponsiveContainer width="100%" height={500}>
       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
@@ -430,3 +440,17 @@ const RadarVisual = ({ data }: { data: any[] }) => {
     </ResponsiveContainer>
   );
 };
+
+const BarVisual = ({ data }: { data: any[] }) => (
+  <ResponsiveContainer width="100%" height={400}>
+    <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+      <XAxis dataKey="turma" />
+      <YAxis domain={[0, 100]} />
+      <Tooltip />
+      <Legend />
+      <Bar dataKey="media" name="Média da Turma" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+      <Bar dataKey="escola" name="Média da Escola" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+    </BarChart>
+  </ResponsiveContainer>
+);
