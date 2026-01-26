@@ -251,10 +251,17 @@ export const api = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.accessToken;
+      const state = getState() as RootState;
+      const token = state.auth.accessToken;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
+
+      const academicYearId = state.app.academicYearId;
+      if (academicYearId) {
+        headers.set("x-academic-year-id", academicYearId.toString());
+      }
+
       return headers;
     }
   }),
@@ -397,6 +404,10 @@ export const api = createApi({
       }),
       invalidatesTags: ["Usuarios"]
     }),
+    getMe: builder.query<UsuarioAccount, void>({
+      query: () => "/usuarios/me",
+      providesTags: ["Usuarios"]
+    }),
     listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean }[], void>({
       query: () => "/comunicados",
       providesTags: ["Comunicados"]
@@ -488,6 +499,32 @@ export const api = createApi({
         method: "DELETE"
       }),
       invalidatesTags: ["Alunos", "Dashboard", "Turmas"]
+    }),
+    listAcademicYears: builder.query<{ id: number; label: string; is_current: boolean }[], void>({
+      query: () => "/academic-years",
+      providesTags: ["Dashboard"]
+    }),
+
+    // Super Admin Endpoints
+    listTenants: builder.query<any[], void>({
+      query: () => "/admin/tenants",
+      providesTags: ["Usuarios"] // Or a new 'Admin' tag
+    }),
+    createTenant: builder.mutation<void, { name: string; slug: string; domain?: string; initial_year?: string }>({
+      query: (body) => ({
+        url: "/admin/tenants",
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Usuarios"]
+    }),
+    addAcademicYearToTenant: builder.mutation<void, { tenantId: number; label: string; set_current?: boolean }>({
+      query: ({ tenantId, ...body }) => ({
+        url: `/admin/tenants/${tenantId}/years`,
+        method: "POST",
+        body
+      }),
+      invalidatesTags: ["Usuarios", "Dashboard"]
     })
   })
 });
@@ -513,6 +550,7 @@ export const {
   useCreateUsuarioMutation,
   useUpdateUsuarioMutation,
   useDeleteUsuarioMutation,
+  useGetMeQuery,
   useListComunicadosQuery,
   useCreateComunicadoMutation,
   useUpdateComunicadoMutation,
@@ -525,6 +563,10 @@ export const {
   useListAuditLogsQuery,
   useCreateAlunoMutation,
   useUpdateAlunoMutation,
-  useDeleteAlunoMutation
+  useDeleteAlunoMutation,
+  useListAcademicYearsQuery,
+  useListTenantsQuery,
+  useCreateTenantMutation,
+  useAddAcademicYearToTenantMutation
 } = api;
 

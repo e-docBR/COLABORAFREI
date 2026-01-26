@@ -61,8 +61,8 @@ export const LoginPage = () => {
     return localStorage.getItem(key) ?? fallback;
   };
 
-  const [username, setUsername] = useState(() => readStorage("colabora.login.username", "admin"));
-  const [password, setPassword] = useState("admin");
+  const [username, setUsername] = useState(() => readStorage("colabora.login.username", ""));
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState(() => {
     const stored = readStorage("colabora.login.role", isStudentFlow ? "aluno" : "admin");

@@ -61,12 +61,40 @@ def receive_do_orm_execute(orm_execute_state):
     if orm_execute_state.execution_options.get("include_all_tenants", False):
          return
 
-    mapper = orm_execute_state.bind_mapper
-    if mapper and hasattr(mapper.class_, "tenant_id"):
-        # Append WHERE tenant_id = X
-        orm_execute_state.statement = orm_execute_state.statement.where(
-            mapper.class_.tenant_id == current_tenant
-        )
+    # Append WHERE tenant_id = X AND academic_year_id = Y
+    for mapper in orm_execute_state.all_mappers:
+        target_cls = mapper.class_
+        
+        # Filter by tenant_id if present
+        if hasattr(target_cls, "tenant_id"):
+            from sqlalchemy import or_
+            # For Usuario, allow NULL tenant_id to support super_admin access
+            if target_cls.__name__ == "Usuario":
+                orm_execute_state.statement = orm_execute_state.statement.where(
+                    or_(
+                        target_cls.tenant_id == current_tenant,
+                        target_cls.tenant_id.is_(None)
+                    )
+                )
+            else:
+                orm_execute_state.statement = orm_execute_state.statement.where(
+                    target_cls.tenant_id == current_tenant
+                )
+            
+        # Filter by academic_year_id if present in 'g' and in model
+        try:
+            current_year = g.academic_year_id
+        except (RuntimeError, AttributeError):
+            current_year = None
+
+        if current_year and hasattr(target_cls, "academic_year_id"):
+            # Avoid filtering AcademicYear table itself by academic_year_id to allow year switching/listing
+            from app.models.academic_year import AcademicYear
+            if target_cls != AcademicYear:
+                orm_execute_state.statement = orm_execute_state.statement.where(
+                    target_cls.academic_year_id == current_year
+                )
+
 
 Base = declarative_base()
 

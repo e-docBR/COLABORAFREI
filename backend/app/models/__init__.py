@@ -6,5 +6,6 @@ from .usuario import Usuario
 from .ocorrencia import Ocorrencia
 from .audit_log import AuditLog
 from .tenant import Tenant
+from .academic_year import AcademicYear
 
-__all__ = ["Aluno", "Nota", "Usuario", "Comunicado", "Ocorrencia", "AuditLog", "Tenant"]
+__all__ = ["Aluno", "Nota", "Usuario", "Comunicado", "Ocorrencia", "AuditLog", "Tenant", "AcademicYear"]

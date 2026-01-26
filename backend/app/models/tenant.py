@@ -14,6 +14,8 @@ class Tenant(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
-    # Relationships will be defined in other models back-referencing this
+    # Relationships
     usuarios = relationship("Usuario", back_populates="tenant")
     alunos = relationship("Aluno", back_populates="tenant")
+    academic_years = relationship("AcademicYear", back_populates="tenant", cascade="all, delete-orphan")
+

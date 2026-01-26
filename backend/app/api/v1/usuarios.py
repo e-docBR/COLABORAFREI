@@ -248,4 +248,34 @@ def register(parent: Blueprint) -> None:
         photos_dir = Path(settings.upload_folder) / "photos"
         return send_from_directory(photos_dir, filename)
 
+    @bp.get("/usuarios/me")
+    @jwt_required()
+    def get_me():
+        from flask import g
+        user_id = int(get_jwt_identity())
+        
+        with session_scope() as session:
+            usuario = (
+                session.query(Usuario)
+                .options(joinedload(Usuario.aluno))
+                .filter(Usuario.id == user_id)
+                .execution_options(include_all_tenants=True)
+                .first()
+            )
+            if not usuario:
+                return jsonify({"error": "Usuário não encontrado"}), 404
+            
+            # If user is an aluno, resolve their Aluno record for the active academic year
+            # The ORM listener automatically filters Aluno queries by academic_year_id from g.academic_year_id
+            if usuario.role == "aluno":
+                # Search by matricula (which is persistent) in the current year
+                active_aluno = session.query(Aluno).filter(
+                    Aluno.matricula == usuario.username
+                ).first()
+                if active_aluno:
+                    usuario.aluno = active_aluno
+                    usuario.aluno_id = active_aluno.id
+            
+            return jsonify(serialize_usuario(usuario))
+
     parent.register_blueprint(bp)

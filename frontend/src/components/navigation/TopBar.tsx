@@ -22,7 +22,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logout, updateUser } from "../../features/auth/authSlice";
-import { useUploadPhotoMutation } from "../../lib/api";
+import { setAcademicYearId } from "../../features/app/appSlice";
+import { useUploadPhotoMutation, useListAcademicYearsQuery, api } from "../../lib/api";
 import { ThemeToggle } from "./ThemeToggle";
 
 const getInitials = (value?: string) =>
@@ -38,6 +39,47 @@ const ROLE_LABELS: Record<string, string> = {
   coordenador: "Coordenador",
   professor: "Professor",
   aluno: "Aluno"
+};
+
+const AcademicYearSelector = () => {
+  const { data: years, isLoading } = useListAcademicYearsQuery();
+  const currentYearId = useAppSelector((state) => state.app.academicYearId);
+  const dispatch = useAppDispatch();
+
+  if (isLoading || !years || years.length === 0) return null;
+
+  // If no year is selected in state, and we have years, we might want to show which one is current
+  const selectedId = currentYearId || years.find((y: { is_current: boolean; id: number }) => y.is_current)?.id || years[0].id;
+
+  return (
+    <TextField
+      select
+      size="small"
+      value={selectedId}
+      onChange={(e) => {
+        const newId = Number(e.target.value);
+        dispatch(setAcademicYearId(newId));
+        // Invalidate all tags to refresh data for the new year
+        dispatch(api.util.invalidateTags(["Dashboard", "Alunos", "Notas", "Turmas", "Comunicados", "Ocorrencias", "Uploads"]));
+      }}
+      sx={{
+        minWidth: 100,
+        "& .MuiOutlinedInput-root": {
+          fontSize: "0.875rem",
+          fontWeight: 600
+        }
+      }}
+      SelectProps={{
+        native: true,
+      }}
+    >
+      {years.map((year: { id: number; label: string; is_current: boolean }) => (
+        <option key={year.id} value={year.id}>
+          {year.label} {year.is_current ? "(Atual)" : ""}
+        </option>
+      ))}
+    </TextField>
+  );
 };
 
 export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
@@ -127,6 +169,11 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       </Box>
 
       <Box display="flex" alignItems="center" gap={2}>
+        {/* Academic Year Selector */}
+        <Box sx={{ display: { xs: "none", sm: "block" } }}>
+          <AcademicYearSelector />
+        </Box>
+
         {/* Theme Toggle */}
         <ThemeToggle />
 

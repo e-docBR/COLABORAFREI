@@ -1,25 +1,25 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.database import Base
+from .base_mixin import TenantYearMixin
 
-class Ocorrencia(Base):
+class Ocorrencia(Base, TenantYearMixin):
     __tablename__ = "ocorrencias"
 
-    id = Column(Integer, primary_key=True)
-    aluno_id = Column(Integer, ForeignKey("alunos.id"), nullable=False)
-    autor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
-    # Simple string for enum flexibility or strict Enum
-    tipo = Column(String(50), nullable=False) # ADVERTENCIA, ELOGIO, ATRASO, SUSPENSAO, NOTE
-    descricao = Column(Text, nullable=False)
-    data_ocorrencia = Column(DateTime, default=datetime.now)
-    resolvida = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.now)
+    tipo: Mapped[str] = mapped_column(String(50), nullable=False) # Advertência, Elogio, etc
+    descricao: Mapped[str] = mapped_column(Text, nullable=False)
+    data_registro: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    aluno_id: Mapped[int] = mapped_column(ForeignKey("alunos.id"), nullable=False)
+    autor_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False)
 
-    aluno = relationship("Aluno", backref="ocorrencias")
+    aluno = relationship("Aluno")
     autor = relationship("Usuario")
+
 
     def to_dict(self):
         return {

@@ -29,11 +29,19 @@ def build_aluno_username(aluno: Aluno) -> str:
 def ensure_aluno_user(session: Session, aluno: Aluno) -> Usuario:
     """Garante que exista um usuário vinculado ao aluno informado."""
     username = build_aluno_username(aluno)
+    # 1. First try to find by username (matricula-based) to avoid duplicates across years
+    usuario = session.query(Usuario).filter(Usuario.username == username).first()
+    if usuario:
+        # If user exists but is not linked to this tenant, maybe it's a conflict or shared?
+        # For now, if it exists, use it. We might update the hardcoded aluno_id to the most recent.
+        if usuario.aluno_id != aluno.id and aluno.academic_year.is_current:
+             usuario.aluno_id = aluno.id
+        return usuario
+
+    # 2. Fallback to searching by aluno_id if username didn't match (unlikely but safe)
     stmt = select(Usuario).where(Usuario.aluno_id == aluno.id)
     usuario = session.execute(stmt).scalar_one_or_none()
     if usuario:
-        if usuario.username != username:
-            usuario.username = username
         return usuario
 
     usuario = Usuario(
@@ -41,10 +49,11 @@ def ensure_aluno_user(session: Session, aluno: Aluno) -> Usuario:
         password_hash=hash_password(aluno.matricula),
         role="aluno",
         aluno_id=aluno.id,
+        tenant_id=aluno.tenant_id,
         must_change_password=True,
     )
     session.add(usuario)
-    logger.info("Usuário aluno %s criado automaticamente", username)
+    logger.info("Usuário aluno %s criado automaticamente para o tenant %s", username, aluno.tenant_id)
     return usuario
 
 

@@ -35,6 +35,10 @@ export const Sidebar = ({ mobile }: { mobile?: boolean }) => {
     if (isAluno) return alunoNavItems;
     const base = [...staffNavItems];
 
+    if (user?.role === "super_admin") {
+      base.push({ label: "Escolas (SaaS)", icon: <DashboardIcon />, path: `${appBasePath}/admin/escolas` });
+    }
+
     if (isAdmin) {
       base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
       base.push({ label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` });

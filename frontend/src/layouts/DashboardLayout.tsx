@@ -5,8 +5,11 @@ import { Outlet } from "react-router-dom";
 
 import { Sidebar } from "../components/navigation/Sidebar";
 import { TopBar } from "../components/navigation/TopBar";
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useGetMeQuery } from "../lib/api";
+import { updateUser } from "../features/auth/authSlice";
 
 import { ChatWidget } from "../features/ai-chat/ChatWidget";
 
@@ -14,6 +17,15 @@ export const DashboardLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
   const location = useLocation();
+
+  const { data: userData } = useGetMeQuery(undefined, { skip: !user });
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (userData && JSON.stringify(userData) !== JSON.stringify(user)) {
+      dispatch(updateUser(userData));
+    }
+  }, [userData, user, dispatch]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

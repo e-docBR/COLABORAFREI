@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-01-26
+
+### 🚀 Added
+- **🏫 Multi-Tenancy & School Isolation**: 
+    - Full architectural support for multiple schools on a single instance.
+    - Automated data isolation via `TenantYearMixin` in the ORM.
+    - Staged database migration for safe transition of existing data.
+- **📅 Academic Year Management**:
+    - New `AcademicYear` module for logical separation of school cycles.
+    - **Global Year Selector**: Added to the TopBar for seamless switching between current and historical data.
+    - **Year Filtering**: Automated backend filtering for all modules (Alunos, Notas, Comunicados, Ocorrências).
+    - **Session Persistence**: Academic year state managed via global Redux `appSlice`.
+- **🛠️ Super Admin Module**:
+    - Centralized management of schools (tenants) and academic cycles.
+    - Security-hardened endpoints for SaaS operations.
+
+### 🔧 Technical
+- **🛡️ Secure ORM Filters**: Implemented `do_orm_execute` hooks for mandatory tenant and year scoping with specific bypasses for global admin access.
+- **🔗 Profile Synchronization**: New `/usuarios/me` endpoint to dynamically resolve student profiles based on the active year.
+- **🐛 Bug Fixes**:
+    - Fixed login issues related to password hashing for new superadmin accounts.
+    - Resolved profile-loading conflicts for global admins in multi-tenant contexts.
+    - Removed legacy default credentials from the login screen for better security.
+
 ## [0.7.0] - 2026-01-26
 
 ### 🚀 Added

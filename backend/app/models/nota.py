@@ -3,9 +3,10 @@ from sqlalchemy import ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.database import Base
+from .base_mixin import TenantYearMixin
 
 
-class Nota(Base):
+class Nota(Base, TenantYearMixin):
     __tablename__ = "notas"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

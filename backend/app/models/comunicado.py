@@ -1,24 +1,25 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.database import Base
+from .base_mixin import TenantYearMixin
 
-class Comunicado(Base):
+class Comunicado(Base, TenantYearMixin):
     __tablename__ = "comunicados"
 
-    id = Column(Integer, primary_key=True)
-    titulo = Column(String(200), nullable=False)
-    conteudo = Column(Text, nullable=False)
-    data_envio = Column(DateTime, default=datetime.now)
-    arquivado = Column(Boolean, default=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
-    autor_id = Column(Integer, ForeignKey("usuarios.id"))
+    titulo: Mapped[str] = mapped_column(String(200), nullable=False)
+    conteudo: Mapped[str] = mapped_column(Text, nullable=False)
+    data_publicacao: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    autor_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False)
     autor = relationship("Usuario")
 
     # Target: "TODOS", "TURMA:<turma_slug>", "ALUNO:<id>"
-    target_type = Column(String(50), nullable=False) 
-    target_value = Column(String(100), nullable=True)
+    target_type = mapped_column(String(50), nullable=False) 
+    target_value = mapped_column(String(100), nullable=True)
 
     def to_dict(self):
         return {
