@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from "react";
-import { ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material/styles";
+import { useMemo, useState, useEffect, createContext, useContext } from "react";
+import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from "@mui/material/styles";
 
 import { tokens } from "./tokens";
 
@@ -131,6 +131,15 @@ const buildTheme = (mode: "light" | "dark") =>
     }
   });
 
+// Context for theme management
+interface ThemeContextType {
+  mode: "light" | "dark";
+  toggleTheme: () => void;
+  theme: Theme;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
 // Local storage key for theme preference
 const THEME_STORAGE_KEY = "colaborafrei-theme-mode";
 
@@ -164,7 +173,23 @@ export const useAppTheme = () => {
   return { theme, mode, toggleTheme };
 };
 
-export const AppThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const { theme } = useAppTheme();
-  return <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>;
+export const useColorMode = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useColorMode must be used within an AppThemeProvider");
+  }
+  return context;
 };
+
+export const AppThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const themeManagement = useAppTheme();
+
+  return (
+    <ThemeContext.Provider value={themeManagement}>
+      <MuiThemeProvider theme={themeManagement.theme}>
+        {children}
+      </MuiThemeProvider>
+    </ThemeContext.Provider>
+  );
+};
+

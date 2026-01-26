@@ -27,14 +27,24 @@ import { useListTurmasQuery } from "../../lib/api";
 
 const progressFromMedia = (media?: number | null) => {
   if (media === undefined || media === null) return 0;
-  return Math.min(100, Math.max(0, (media / 20) * 100));
+  // Support both 0-20 and 0-100 scales
+  const scale = media > 20 ? 100 : 20;
+  return Math.min(100, Math.max(0, (media / scale) * 100));
 };
 
+
 const getPerformanceColor = (media: number, theme: any) => {
+  const isLargeScale = media > 20;
+  if (isLargeScale) {
+    if (media < 50) return theme.palette.error.main;
+    if (media < 70) return theme.palette.warning.main;
+    return theme.palette.success.main;
+  }
   if (media < 12) return theme.palette.error.main;
   if (media < 15) return theme.palette.warning.main;
   return theme.palette.success.main;
 };
+
 
 export const TurmasPage = () => {
   const theme = useTheme();
@@ -107,12 +117,14 @@ export const TurmasPage = () => {
           </Grid>
         ) : (
           filtered.map((turma) => {
-            const mediaGeral = turma.media_geral ?? 0;
-            const progress = progressFromMedia(mediaGeral);
-            const performanceColor = getPerformanceColor(mediaGeral, theme);
+            const mediaVal = turma.media ?? 0;
+            const progress = progressFromMedia(mediaVal);
+            const performanceColor = getPerformanceColor(mediaVal, theme);
+
 
             return (
-              <Grid key={turma.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid key={turma.slug || turma.turma} size={{ xs: 12, sm: 6, md: 4 }}>
+
                 <Card
                   elevation={0}
                   sx={{
@@ -127,7 +139,8 @@ export const TurmasPage = () => {
                   }}
                 >
                   <CardActionArea
-                    onClick={() => navigate(`/app/turmas/${turma.id}`)}
+                    onClick={() => navigate(`/app/turmas/${turma.slug || turma.turma}`)}
+
                     sx={{ height: "100%" }}
                   >
                     <CardContent sx={{ p: 2.5 }}>
@@ -180,7 +193,8 @@ export const TurmasPage = () => {
                           }}
                         />
                         <Chip
-                          label={`Média: ${mediaGeral.toFixed(1)}`}
+                          label={`Média: ${mediaVal.toFixed(1)}`}
+
                           size="small"
                           sx={{
                             height: 24,

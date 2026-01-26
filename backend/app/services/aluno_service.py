@@ -33,7 +33,7 @@ class AlunoService:
         )
 
         items = []
-        for aluno, media in results:
+        for aluno, media, faltas in results:
             items.append(
                 AlunoListSchema(
                     id=aluno.id,
@@ -41,9 +41,11 @@ class AlunoService:
                     nome=aluno.nome,
                     turma=aluno.turma,
                     turno=aluno.turno,
-                    media=float(media) if media is not None else None
+                    media=float(media) if media is not None else None,
+                    faltas=int(faltas) if faltas is not None else 0
                 )
             )
+
 
         return AlunoPaginatedResponse(
             items=items,

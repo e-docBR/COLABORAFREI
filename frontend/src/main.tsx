@@ -1,21 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { CssBaseline, ThemeProvider } from "@mui/material";
+import { CssBaseline } from "@mui/material";
 import { Provider } from "react-redux";
 import { RouterProvider } from "react-router-dom";
 
 import { store } from "./app/store";
 import { appRouter } from "./app/routes";
-import { useAppTheme } from "./theme";
+import { AppThemeProvider } from "./theme";
 
 const Root = () => {
-  const { theme } = useAppTheme();
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
+      <AppThemeProvider>
         <CssBaseline />
         <RouterProvider router={appRouter} />
-      </ThemeProvider>
+      </AppThemeProvider>
     </Provider>
   );
 };
@@ -25,3 +24,4 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Root />
   </React.StrictMode>
 );
+

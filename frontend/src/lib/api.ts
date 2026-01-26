@@ -121,7 +121,9 @@ export type AlunoSummary = {
   turma: string;
   turno: string;
   media?: number | null;
+  faltas?: number | null;
 };
+
 
 export type AlunoNota = {
   id: number;

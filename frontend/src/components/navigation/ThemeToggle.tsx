@@ -1,10 +1,10 @@
 import { IconButton, Tooltip } from "@mui/material";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
-import { useAppTheme } from "../../theme";
+import { useColorMode } from "../../theme";
 
 export const ThemeToggle = () => {
-    const { mode, toggleTheme } = useAppTheme();
+    const { mode, toggleTheme } = useColorMode();
 
     return (
         <Tooltip title={mode === "light" ? "Ativar modo escuro" : "Ativar modo claro"}>
@@ -27,3 +27,4 @@ export const ThemeToggle = () => {
         </Tooltip>
     );
 };
+

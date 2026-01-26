@@ -16,17 +16,18 @@ class AlunoRepository(BaseRepository[Aluno]):
         turno: Optional[str] = None,
         turma: Optional[str] = None,
         query_text: Optional[str] = None
-    ) -> Tuple[List[Tuple[Aluno, float]], int]:
+    ) -> Tuple[List[Tuple[Aluno, float, int]], int]:
         
         # Base query for count
         count_query = select(func.count(Aluno.id))
         
         # Base query for data
         data_query = (
-            select(Aluno, func.avg(Nota.total).label("media"))
+            select(Aluno, func.avg(Nota.total).label("media"), func.sum(Nota.faltas).label("faltas"))
             .outerjoin(Nota)
             .group_by(Aluno.id)
         )
+
 
         # Apply filters function
         def apply_filters(query):

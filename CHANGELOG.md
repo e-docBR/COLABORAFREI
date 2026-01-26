@@ -2,7 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] - 2026-01-25
+## [0.4.1] - 2026-01-26
+
+### 🔧 Technical & Bug Fixes
+- **🎨 Shared Theme System**: Implemented `ThemeContext` and global `AppThemeProvider` to ensure dark mode is synchronized across all components.
+- **📊 Student Analytics Fix**: 
+    - Corrected student cards in "Alunos" page to display the arithmetic average of all disciplines.
+    - Updated backend repositories and services to calculate real-time averages and total absences during student listing.
+    - Sincronized 100-point scale thresholds (Risk < 60) across dashboard, listing, and color logic.
+- **🛠️ Refactoring**:
+    - Replaced `id` based routing with `slug` in TurmasPage to resolve TypeScript lint errors.
+    - Standardized field names (`media`, `alunos_em_risco`) across API and frontend.
+
+## [0.4.0] - 2026-01-26
+
 
 ### 🚀 Added
 - **Intelligent Reporting Engine**:

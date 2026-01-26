@@ -28,10 +28,18 @@ const getInitials = (name: string) =>
 
 const getMediaColor = (media?: number | null): "default" | "success" | "warning" | "error" => {
   if (media === undefined || media === null) return "default";
+  // Support both 0-20 and 0-100 scales
+  const isLargeScale = media > 20;
+  if (isLargeScale) {
+    if (media >= 70) return "success";
+    if (media < 50) return "error";
+    return "warning";
+  }
   if (media >= 15) return "success";
   if (media < 12) return "error";
   return "warning";
 };
+
 
 export const AlunosPage = () => {
   const [search, setSearch] = useState("");
@@ -224,11 +232,12 @@ export const AlunosPage = () => {
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Chip
-                        label={aluno.media_geral !== null && aluno.media_geral !== undefined
-                          ? `Média: ${aluno.media_geral.toFixed(1)}`
+                        label={aluno.media !== null && aluno.media !== undefined
+                          ? `Média: ${aluno.media.toFixed(1)}`
                           : "Sem média"}
                         size="small"
-                        color={getMediaColor(aluno.media_geral)}
+                        color={getMediaColor(aluno.media)}
+
                         sx={{
                           height: 20,
                           fontSize: "0.625rem",

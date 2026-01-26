@@ -26,6 +26,8 @@ class AlunoBase(BaseModel):
 class AlunoListSchema(AlunoBase):
     id: int
     media: Optional[float] = None
+    faltas: Optional[int] = None
+
 
 class AlunoDetailSchema(AlunoBase):
     id: int
