@@ -109,7 +109,8 @@ export const DashboardPage = () => {
       label: "Em Risco",
       value: data?.alunos_em_risco ?? 0,
 
-      helper: "Média < 60",
+      helper: "Média < 50",
+
 
       icon: WarningAmberIcon,
       color: theme.palette.warning.main

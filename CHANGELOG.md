@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-01-26
+
+### 🔧 Fixes & Enhancements
+- **📊 Business Logic Update**: Adjusted the **"Em Risco" (At Risk)** KPI threshold from 60 to **50**. This aligns the dashboard metrics with conservative academic criteria, reducing false positives in risk reporting.
+
 ## [0.5.0] - 2026-01-26
+
 
 ### 🚀 Added
 - **Student Management (CRUD)**:

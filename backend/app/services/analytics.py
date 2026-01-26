@@ -47,8 +47,9 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
 
     alunos_em_risco = (
         session.execute(
-            select(func.count(func.distinct(Nota.aluno_id))).where(Nota.total < 60)
+            select(func.count(func.distinct(Nota.aluno_id))).where(Nota.total < 50)
         ).scalar_one()
+
 
         or 0
     )
