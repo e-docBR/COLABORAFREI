@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-01-27
+
+### 🚀 Added
+- **🌐 Hetzner Cloud Infrastructure**: 
+    - Full deployment plan for Hetzner VPS environment.
+    - Automated SSL certificates via **Traefik Proxy** with Let's Encrypt integration.
+    - Production-grade `.env.production` template with automated secret generation.
+- **🛠️ DevOps & CLI Enancements**:
+    - **Docker Compose V2 Support**: Optimized orchestration for modern Docker environments.
+    - **Database Management CLI**: 
+        - New `drop-db` command for safe environment resets.
+        - Enhanced `seed-demo` command now automatically provisions mandatory `Tenant` and `AcademicYear` data.
+- **🛡️ Infrastructure Hardening**:
+    - Implemented **ProxyFix** middleware in Flask to correctly resolve client IPs and HTTPS protocols behind Traefik.
+    - Automated SSH key provisioning for secure server management.
+
+### 🔧 Fixes
+- **🎨 Frontend Build Corrections**:
+    - Fixed TypeScript errors in `api.ts` related to `Comunicado` target types.
+    - Resolved JSX duplicate attribute error in `GraficosPage.tsx` preventing production builds.
+    - Synchronized `Chart` types with backend multi-tenant data structures.
+
 ## [0.8.0] - 2026-01-26
 
 ### 🚀 Added

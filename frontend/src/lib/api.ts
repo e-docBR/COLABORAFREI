@@ -408,7 +408,7 @@ export const api = createApi({
       query: () => "/usuarios/me",
       providesTags: ["Usuarios"]
     }),
-    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean }[], void>({
+    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean; target_type?: string; target_value?: string }[], void>({
       query: () => "/comunicados",
       providesTags: ["Comunicados"]
     }),

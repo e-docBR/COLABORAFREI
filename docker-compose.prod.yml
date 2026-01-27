@@ -1,10 +1,30 @@
 services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - app_network
+
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: colabora_edu
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-colabora_edu}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -29,14 +49,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # Uses default CMD (gunicorn) from Dockerfile
     environment:
       FLASK_APP: app
       FLASK_DEBUG: "0"
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/colabora_edu
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-colabora_edu}
       REDIS_URL: redis://redis:6379/0
-      # In prod, this should list actual domains
-      ALLOWED_ORIGINS: '["http://localhost", "https://myschool.com"]'
+      ALLOWED_ORIGINS: '["https://${DOMAIN}"]'
       UPLOAD_FOLDER: /data/uploads
     volumes:
       - ./data:/data
@@ -55,7 +73,7 @@ services:
     command: [ "rq", "worker", "default", "--url", "redis://redis:6379/0" ]
     environment:
       FLASK_APP: app
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/colabora_edu
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-colabora_edu}
       REDIS_URL: redis://redis:6379/0
       UPLOAD_FOLDER: /data/uploads
     volumes:
@@ -72,8 +90,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-    ports:
-      - "8090:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.colaborafrei.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.colaborafrei.entrypoints=websecure"
+      - "traefik.http.routers.colaborafrei.tls.certresolver=myresolver"
+      # Redirecionamento HTTP para HTTPS automático
+      - "traefik.http.routers.colaborafrei-http.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.colaborafrei-http.entrypoints=web"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.colaborafrei-http.middlewares=redirect-to-https"
     depends_on:
       - backend
     networks:

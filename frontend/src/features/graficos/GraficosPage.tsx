@@ -207,7 +207,6 @@ export const GraficosPage = () => {
               innerRadius={80}
               outerRadius={120}
               paddingAngle={2}
-              data={rawData}
             >
               {rawData.map((entry: any, index: number) => (
                 <Cell

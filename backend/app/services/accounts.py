@@ -34,7 +34,7 @@ def ensure_aluno_user(session: Session, aluno: Aluno) -> Usuario:
     if usuario:
         # If user exists but is not linked to this tenant, maybe it's a conflict or shared?
         # For now, if it exists, use it. We might update the hardcoded aluno_id to the most recent.
-        if usuario.aluno_id != aluno.id and aluno.academic_year.is_current:
+        if usuario.aluno_id != aluno.id and getattr(aluno, "academic_year", None) and aluno.academic_year.is_current:
              usuario.aluno_id = aluno.id
         return usuario
 
