@@ -1,5 +1,5 @@
 """Versioned API blueprint."""
-from flask import Blueprint
+from flask import Blueprint, request
 
 from . import alunos, auth, dashboard, graficos, notas, relatorios, turmas, uploads, usuarios, comunicados, ocorrencias, audit, chat, academic_years, super_admin
 
