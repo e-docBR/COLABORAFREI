@@ -109,3 +109,38 @@ def register_cli(app):
                 )
                 session.add(admin)
             click.secho("Demo data seeded (includes admin/admin).", fg="green")
+
+    @app.cli.command("reprocess-pdfs")
+    def reprocess_pdfs_command():
+        """Reprocess all PDFs in the upload folder."""
+        from pathlib import Path
+        from .core.config import settings
+        from .services.ingestion import enqueue_pdf
+        from .models import Tenant
+        
+        upload_path = Path(settings.upload_folder)
+        if not upload_path.exists():
+            click.echo("Cloud uploads folder not found.")
+            return
+
+        with session_scope() as session:
+            tenant = session.query(Tenant).filter(Tenant.slug == "default").first()
+            if not tenant:
+                click.echo("Default tenant not found.")
+                return
+            
+            count = 0
+            # glob matches recursively
+            for pdf_file in upload_path.rglob("*.pdf"):
+                # Guess turno/turma from path if possible (assumes /data/uploads/TURNO/TURMA/file.pdf)
+                rel_path = pdf_file.relative_to(upload_path)
+                parts = rel_path.parts
+                
+                turno = parts[0] if len(parts) >= 2 else None
+                turma = parts[1] if len(parts) >= 3 else None
+                
+                enqueue_pdf(pdf_file, turno=turno, turma=turma, tenant_id=tenant.id)
+                count += 1
+                click.echo(f"Enqueued: {rel_path}")
+            
+            click.secho(f"Enqueued {count} files for reprocessing.", fg="green")

@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - **📅 Automatic Academic Year Extraction**:
     - The ingestion service now automatically detects the school year (e.g., 2025) directly from the PDF header ("BOLETIM ESCOLAR - 2025").
     - **Auto-Provisioning**: Creates the `AcademicYear` record automatically if it doesn't exist for the institution, ensuring seamless historical data import.
+- **🛠️ Bulk Data Recovery (CLI)**:
+    - New `reprocess-pdfs` command added to the CLI to recursively re-ingest all existing documents in the cloud storage.
+    - Useful for cleaning up and migration of historical data after system logic updates.
 - **🛡️ Docker Networking Resilience**:
     - Implemented a dynamic DNS resolver and upstream variables in Nginx.
     - Resolves "502 Bad Gateway" errors during backend restarts by preventing IP caching in the frontend proxy.
