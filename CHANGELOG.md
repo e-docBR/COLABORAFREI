@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] - 2026-01-27
+
+### 🔧 Fixes
+- **🚨 CRITICAL: Production System Restored**:
+    - Fixed Traefik configuration to correctly route traffic to the frontend container.
+    - Added missing `traefik.http.services.colaborafrei.loadbalancer.server.port=80` label.
+    - Frontend now correctly uses Nginx production build instead of Vite dev server.
+    - Resolved HTTP 403/521 errors preventing access to the production system.
+- **🛡️ Global Multi-Tenant Enforcement**:
+    - Implemented `before_request` hook in API v1 blueprint for automatic tenant/year resolution.
+    - Removed redundant `@tenant_required()` decorators from individual endpoints.
+    - Fixed data isolation bug where dashboard was showing aggregated data from all academic years.
+
 ## [0.9.1] - 2026-01-27
 
 ### 🚀 Added

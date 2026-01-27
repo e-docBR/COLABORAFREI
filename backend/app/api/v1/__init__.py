@@ -5,6 +5,14 @@ from . import alunos, auth, dashboard, graficos, notas, relatorios, turmas, uplo
 
 api_v1_bp = Blueprint("api_v1", __name__)
 
+@api_v1_bp.before_request
+def before_v1_request():
+    from app.core.middleware import resolve_tenant_context
+    # Bypass for super_admin routes if needed
+    if request.blueprint == "api_v1.super_admin":
+        return None
+    return resolve_tenant_context()
+
 alunos.register(api_v1_bp)
 auth.register(api_v1_bp)
 dashboard.register(api_v1_bp)

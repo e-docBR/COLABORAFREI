@@ -96,6 +96,7 @@ services:
       - "traefik.http.routers.colaborafrei.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.colaborafrei.entrypoints=websecure"
       - "traefik.http.routers.colaborafrei.tls.certresolver=myresolver"
+      - "traefik.http.services.colaborafrei.loadbalancer.server.port=80"
       # Redirecionamento HTTP para HTTPS automático
       - "traefik.http.routers.colaborafrei-http.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.colaborafrei-http.entrypoints=web"

@@ -33,6 +33,9 @@ class DashboardAnalytics:
 
 
 def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
+    from flask import g
+    from loguru import logger
+    logger.info("Building dashboard metrics. g.tenant_id: {}, g.academic_year_id: {}", getattr(g, 'tenant_id', None), getattr(g, 'academic_year_id', None))
     total_alunos = session.execute(select(func.count(Aluno.id))).scalar_one() or 0
     normalized_turma = func.trim(
         func.replace(
