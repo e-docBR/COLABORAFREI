@@ -58,6 +58,7 @@ services:
       UPLOAD_FOLDER: /data/uploads
     volumes:
       - ./data:/data
+    command: [ "gunicorn", "--bind", "0.0.0.0:5000", "--access-logfile", "-", "--error-logfile", "-", "app:create_app()" ]
     networks:
       - app_network
     depends_on:

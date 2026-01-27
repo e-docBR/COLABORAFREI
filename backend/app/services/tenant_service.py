@@ -13,14 +13,13 @@ class TenantService:
         Resolves tenant based on Host header.
         Example: school1.app.com -> domain=school1.app.com
         """
-        # First try exact domain match
         tenant = self.repository.get_by_domain(host)
         if tenant:
             return tenant
             
-        # Fallback logic could go here (e.g. check slug subdomain)
-        # For now simple exact match
-        return None
+        # Fallback 2: Check by slug if host contains it, or just use 'default'
+        # For simple deployments, we allow 'default' to be the catch-all
+        return self.repository.get_by_slug("default")
 
     def get_public_settings(self, tenant_id: int) -> dict:
         tenant = self.repository.get(tenant_id)

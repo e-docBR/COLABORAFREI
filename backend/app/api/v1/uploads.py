@@ -7,6 +7,7 @@ from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
 
 from ...core.config import settings
+from ...core.middleware import tenant_required
 from ...services import enqueue_pdf
 
 
@@ -15,6 +16,7 @@ def register(parent: Blueprint) -> None:
 
     @bp.post("/uploads/pdf")
     @jwt_required()
+    @tenant_required()
     def upload_boletim():
         if "file" not in request.files:
             return jsonify({"error": "arquivo não enviado"}), 400
@@ -34,7 +36,14 @@ def register(parent: Blueprint) -> None:
         filepath = upload_dir / filename
         file.save(filepath)
 
-        job_id = enqueue_pdf(filepath, turno=turno, turma=turma)
+        from flask import g
+        job_id = enqueue_pdf(
+            filepath, 
+            turno=turno, 
+            turma=turma, 
+            tenant_id=g.tenant_id, 
+            academic_year_id=g.academic_year_id
+        )
         return (
             jsonify(
                 {

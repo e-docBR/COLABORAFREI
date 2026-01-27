@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026-01-27
+
+### 🚀 Added
+- **📅 Automatic Academic Year Extraction**:
+    - The ingestion service now automatically detects the school year (e.g., 2025) directly from the PDF header ("BOLETIM ESCOLAR - 2025").
+    - **Auto-Provisioning**: Creates the `AcademicYear` record automatically if it doesn't exist for the institution, ensuring seamless historical data import.
+- **🛡️ Docker Networking Resilience**:
+    - Implemented a dynamic DNS resolver and upstream variables in Nginx.
+    - Resolves "502 Bad Gateway" errors during backend restarts by preventing IP caching in the frontend proxy.
+- **🏗️ Multi-Tenant Robustness**:
+    - Added a fallback mechanism in `TenantService` to the `default` slug, ensuring system stability even during complex domain migrations.
+    - Improved context propagation (Tenant/Year) for background jobs in the RQ Worker.
+
+### 🔧 Fixes
+- Fixed "Inquilino não identificado" error during PDF uploads.
+- Resolved database integrity violations in the worker when processing multi-tenant data.
+
 ## [0.9.0] - 2026-01-27
 
 ### 🚀 Added

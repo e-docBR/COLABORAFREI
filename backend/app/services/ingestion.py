@@ -13,8 +13,8 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..core.database import SessionLocal
-from ..models import Aluno, Nota
+from ..core.database import SessionLocal, session_scope
+from ..models import Aluno, Nota, AcademicYear, Tenant
 from .accounts import ensure_aluno_user
 
 
@@ -44,38 +44,65 @@ STUDENT_META_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+BOLETIM_YEAR_PATTERN = re.compile(
+    r"BOLETIM ESCOLAR\s*-\s*(?P<year>\d{4})",
+    re.IGNORECASE
+)
+
 
 from ..core.queue import queue
 
-def enqueue_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> str:
-    job = queue.enqueue(process_pdf, filepath, turno=turno, turma=turma, job_timeout=600)
+def enqueue_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None, tenant_id: int | None = None, academic_year_id: int | None = None) -> str:
+    job = queue.enqueue(
+        process_pdf, 
+        filepath, 
+        turno=turno, 
+        turma=turma, 
+        tenant_id=tenant_id, 
+        academic_year_id=academic_year_id,
+        job_timeout=600
+    )
     logger.info("Enqueued job {} for file {}", job.id, filepath.name)
     return job.id
 
 
-def process_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None) -> dict[str, any]:
+def process_pdf(filepath: Path, *, turno: str | None = None, turma: str | None = None, tenant_id: int | None = None, academic_year_id: int | None = None) -> dict[str, any]:
     errors: list[str] = []
-    records = parse_pdf(filepath, errors, turno=turno, turma=turma)
+    records, extracted_year = parse_pdf(filepath, errors, turno=turno, turma=turma)
     
+    # Resolve academic year if extracted from PDF
+    if extracted_year and tenant_id:
+        with session_scope() as session:
+            year_obj = session.query(AcademicYear).filter(
+                AcademicYear.tenant_id == tenant_id,
+                AcademicYear.label == str(extracted_year)
+            ).first()
+            if not year_obj:
+                year_obj = AcademicYear(tenant_id=tenant_id, label=str(extracted_year), is_current=False)
+                session.add(year_obj)
+                session.commit()
+                logger.info("Created new AcademicYear {} for tenant {}", extracted_year, tenant_id)
+            academic_year_id = year_obj.id
+
     count = 0
     if not records:
         msg = f"Nenhum registro encontrado no boletim {filepath.name}"
         logger.warning(msg)
         errors.append(msg)
     else:
-        count = apply_records(records)
+        count = apply_records(records, tenant_id=tenant_id, academic_year_id=academic_year_id)
     
     return {"count": count, "logs": errors}
 
 
-def apply_records(records: Sequence[ParsedAlunoRecord]) -> int:
+def apply_records(records: Sequence[ParsedAlunoRecord], tenant_id: int | None = None, academic_year_id: int | None = None) -> int:
     if not records:
         return 0
     session = SessionLocal()
     try:
         for record in records:
-            aluno = _upsert_aluno(session, record)
-            _upsert_notas(session, aluno, record.notas)
+            aluno = _upsert_aluno(session, record, tenant_id=tenant_id, academic_year_id=academic_year_id)
+            _upsert_notas(session, aluno, record.notas, tenant_id=tenant_id, academic_year_id=academic_year_id)
         session.commit()
         return len(records)
     except Exception:
@@ -85,11 +112,19 @@ def apply_records(records: Sequence[ParsedAlunoRecord]) -> int:
         session.close()
 
 
-def parse_pdf(filepath: Path, errors: list[str], *, turno: str | None = None, turma: str | None = None) -> list[ParsedAlunoRecord]:
+def parse_pdf(filepath: Path, errors: list[str], *, turno: str | None = None, turma: str | None = None) -> tuple[list[ParsedAlunoRecord], int | None]:
     parsed: dict[str, ParsedAlunoRecord] = {}
+    extracted_year = None
     with pdfplumber.open(str(filepath)) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
+            
+            # Try to extract year once
+            if extracted_year is None:
+                year_match = BOLETIM_YEAR_PATTERN.search(text)
+                if year_match:
+                    extracted_year = int(year_match.group("year"))
+
             tables = page.extract_tables() or []
             student_metas = _extract_student_meta(text)
             if not student_metas:
@@ -145,7 +180,7 @@ def parse_pdf(filepath: Path, errors: list[str], *, turno: str | None = None, tu
                             situacao=_clean_text(row.get("situacao")),
                         )
                     )
-    return list(parsed.values())
+    return list(parsed.values()), extracted_year
 
 
 def _extract_student_meta(text: str) -> list[dict[str, str | None]]:
@@ -239,8 +274,14 @@ def _extract_rows(tables: Sequence[Sequence[Sequence[str | None]]]) -> Iterable[
                 yield row
 
 
-def _upsert_aluno(session: Session, record: ParsedAlunoRecord) -> Aluno:
-    stmt = select(Aluno).where(Aluno.matricula == record.matricula)
+
+
+
+def _upsert_aluno(session: Session, record: ParsedAlunoRecord, tenant_id: int | None = None, academic_year_id: int | None = None) -> Aluno:
+    stmt = select(Aluno).where(
+        Aluno.matricula == record.matricula,
+        Aluno.tenant_id == tenant_id
+    )
     aluno = session.execute(stmt).scalar_one_or_none()
     if aluno is None:
         aluno = Aluno(
@@ -248,12 +289,15 @@ def _upsert_aluno(session: Session, record: ParsedAlunoRecord) -> Aluno:
             nome=record.nome,
             turma=record.turma or "",
             turno=record.turno or "",
+            tenant_id=tenant_id,
+            academic_year_id=academic_year_id
         )
         session.add(aluno)
         session.flush()
         ensure_aluno_user(session, aluno)
         return aluno
     aluno.nome = record.nome or aluno.nome
+    aluno.academic_year_id = academic_year_id # Update to current processing year
     if record.turma:
         aluno.turma = record.turma
     if record.turno:
@@ -262,11 +306,13 @@ def _upsert_aluno(session: Session, record: ParsedAlunoRecord) -> Aluno:
     return aluno
 
 
-def _upsert_notas(session: Session, aluno: Aluno, notas: Sequence[ParsedNotaRecord]) -> None:
+def _upsert_notas(session: Session, aluno: Aluno, notas: Sequence[ParsedNotaRecord], tenant_id: int | None = None, academic_year_id: int | None = None) -> None:
     for nota_data in notas:
         stmt = select(Nota).where(
             Nota.aluno_id == aluno.id,
             Nota.disciplina_normalizada == nota_data.disciplina_normalizada,
+            Nota.tenant_id == tenant_id,
+            Nota.academic_year_id == academic_year_id
         )
         existing = session.execute(stmt).scalars().all()
         nota = existing[0] if existing else None
@@ -277,6 +323,8 @@ def _upsert_notas(session: Session, aluno: Aluno, notas: Sequence[ParsedNotaReco
                 aluno_id=aluno.id,
                 disciplina=nota_data.disciplina,
                 disciplina_normalizada=nota_data.disciplina_normalizada,
+                tenant_id=tenant_id,
+                academic_year_id=academic_year_id
             )
             session.add(nota)
         else:
