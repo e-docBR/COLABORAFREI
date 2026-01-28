@@ -263,10 +263,11 @@ export const ChatWidget = () => {
                                     elevation={0}
                                     sx={{
                                         p: 1.5,
-                                        bgcolor: msg.sender === "user" ? "primary.light" : "white",
+                                        bgcolor: msg.sender === "user" ? "primary.main" : "background.paper",
                                         color: msg.sender === "user" ? "primary.contrastText" : "text.primary",
                                         borderRadius: 2,
-                                        border: msg.sender === "bot" ? "1px solid #eee" : "none",
+                                        border: "1px solid",
+                                        borderColor: "divider",
                                         borderTopRightRadius: msg.sender === "user" ? 0 : 2,
                                         borderTopLeftRadius: msg.sender === "bot" ? 0 : 2,
                                     }}

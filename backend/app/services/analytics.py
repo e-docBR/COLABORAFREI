@@ -135,8 +135,19 @@ def build_teacher_dashboard(session: Session, query: str | None = None, turno: s
     
     classes_count = session.execute(stm_c).scalar_one()
 
+    # 4. Global Stats
+    stm_total_alunos = select(func.count(Aluno.id))
+    stm_total_alunos = apply_filters(stm_total_alunos)
+    total_alunos = session.execute(stm_total_alunos).scalar_one()
+
+    stm_mean = select(func.avg(Nota.total)).join(Aluno)
+    stm_mean = apply_filters(stm_mean)
+    global_avg = session.execute(stm_mean).scalar() or 0
+
     return {
         "distribution": dist,
         "alerts": alerts,
-        "classes_count": classes_count
+        "classes_count": classes_count,
+        "total_students": total_alunos,
+        "global_average": round(float(global_avg), 1)
     }

@@ -231,7 +231,7 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
         </Box>
 
         {/* Academic Year Selector */}
-        <Box sx={{ display: { xs: "none", sm: "block" } }}>
+        <Box sx={{ display: "block" }}>
           <AcademicYearSelector />
         </Box>
 

@@ -27,6 +27,11 @@ export const DashboardLayout = () => {
     }
   }, [userData, user, dispatch]);
 
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
