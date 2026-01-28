@@ -18,12 +18,12 @@ import {
   Typography
 } from "@mui/material";
 import { MouseEvent, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logout, updateUser } from "../../features/auth/authSlice";
-import { setAcademicYearId } from "../../features/app/appSlice";
-import { useUploadPhotoMutation, useListAcademicYearsQuery, api } from "../../lib/api";
+import { setAcademicYearId, setTenantId } from "../../features/app/appSlice";
+import { useUploadPhotoMutation, useListAcademicYearsQuery, useListPublicTenantsQuery, api } from "../../lib/api";
 import { ThemeToggle } from "./ThemeToggle";
 
 const getInitials = (value?: string) =>
@@ -48,7 +48,6 @@ const AcademicYearSelector = () => {
 
   if (isLoading || !years || years.length === 0) return null;
 
-  // If no year is selected in state, and we have years, we might want to show which one is current
   const selectedId = currentYearId || years.find((y: { is_current: boolean; id: number }) => y.is_current)?.id || years[0].id;
 
   return (
@@ -59,7 +58,6 @@ const AcademicYearSelector = () => {
       onChange={(e) => {
         const newId = Number(e.target.value);
         dispatch(setAcademicYearId(newId));
-        // Invalidate all tags to refresh data for the new year
         dispatch(api.util.invalidateTags(["Dashboard", "Alunos", "Notas", "Turmas", "Comunicados", "Ocorrencias", "Uploads"]));
       }}
       sx={{
@@ -69,13 +67,50 @@ const AcademicYearSelector = () => {
           fontWeight: 600
         }
       }}
-      SelectProps={{
-        native: true,
-      }}
+      SelectProps={{ native: true }}
     >
       {years.map((year: { id: number; label: string; is_current: boolean }) => (
         <option key={year.id} value={year.id}>
           {year.label} {year.is_current ? "(Atual)" : ""}
+        </option>
+      ))}
+    </TextField>
+  );
+};
+
+const TenantSelector = () => {
+  const user = useAppSelector((state) => state.auth.user);
+  const { data: tenants, isLoading } = useListPublicTenantsQuery();
+  const currentTenantId = useAppSelector((state) => state.app.tenantId);
+  const dispatch = useAppDispatch();
+
+  if (user?.role !== "super_admin") return null;
+  if (isLoading || !tenants || tenants.length === 0) return null;
+
+  const selectedId = currentTenantId || tenants[0].id;
+
+  return (
+    <TextField
+      select
+      size="small"
+      value={selectedId}
+      onChange={(e) => {
+        const newId = Number(e.target.value);
+        dispatch(setTenantId(newId));
+        dispatch(api.util.invalidateTags(["Dashboard", "Alunos", "Notas", "Turmas", "Comunicados", "Ocorrencias", "Uploads"]));
+      }}
+      sx={{
+        minWidth: 150,
+        "& .MuiOutlinedInput-root": {
+          fontSize: "0.875rem",
+          fontWeight: 600
+        }
+      }}
+      SelectProps={{ native: true }}
+    >
+      {tenants.map((t) => (
+        <option key={t.id} value={t.id}>
+          {t.name}
         </option>
       ))}
     </TextField>
@@ -88,8 +123,27 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchVal = searchParams.get("q") || "";
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const isSearchPage = ["/app/alunos", "/app/turmas"].includes(location.pathname);
+
+    if (isSearchPage) {
+      if (value) {
+        searchParams.set("q", value);
+      } else {
+        searchParams.delete("q");
+      }
+      setSearchParams(searchParams, { replace: true });
+    } else if (value) {
+      navigate(`/app/alunos?q=${encodeURIComponent(value)}`);
+    }
+  };
+
   const menuOpen = Boolean(anchorEl);
-  const showSearch = !["/app", "/app/", "/app/meu-boletim", "/app/usuarios", "/app/alunos", "/app/turmas", "/app/graficos", "/app/notas", "/app/uploads", "/app/professor", "/app/ocorrencias"].includes(location.pathname);
+  const showSearch = ["/app", "/app/", "/app/alunos", "/app/turmas"].includes(location.pathname);
 
   const [uploadPhoto] = useUploadPhotoMutation();
 
@@ -157,6 +211,8 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
             placeholder="Buscar alunos, turmas…"
             size="small"
             sx={{ maxWidth: { xs: 200, sm: 320 }, display: { xs: "none", sm: "flex" } }}
+            value={searchVal}
+            onChange={handleSearchChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -169,6 +225,11 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       </Box>
 
       <Box display="flex" alignItems="center" gap={2}>
+        {/* Tenant Selector (Super Admin only) */}
+        <Box sx={{ display: { xs: "none", sm: "block" } }}>
+          <TenantSelector />
+        </Box>
+
         {/* Academic Year Selector */}
         <Box sx={{ display: { xs: "none", sm: "block" } }}>
           <AcademicYearSelector />
@@ -284,4 +345,3 @@ export const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
     </Box>
   );
 };
-

@@ -33,6 +33,8 @@ def serialize_usuario(usuario: Usuario) -> dict[str, object]:
         "aluno_id": usuario.aluno_id,
         "photo_url": usuario.photo_url,
         "must_change_password": usuario.must_change_password,
+        "tenant_id": usuario.tenant_id,
+        "tenant_name": usuario.tenant_name,
         "aluno": aluno_data,
     }
 
@@ -257,7 +259,7 @@ def register(parent: Blueprint) -> None:
         with session_scope() as session:
             usuario = (
                 session.query(Usuario)
-                .options(joinedload(Usuario.aluno))
+                .options(joinedload(Usuario.aluno), joinedload(Usuario.tenant))
                 .filter(Usuario.id == user_id)
                 .execution_options(include_all_tenants=True)
                 .first()

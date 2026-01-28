@@ -20,6 +20,7 @@ import {
     InputAdornment
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useGetTeacherDashboardQuery, useListTurmasQuery } from "../../lib/api";
 
@@ -170,7 +171,14 @@ export const TeacherDashboard = () => {
                                         <ListItemText
                                             primary={
                                                 <Box display="flex" gap={2} alignItems="center">
-                                                    <Typography fontWeight={600}>{aluno.nome}</Typography>
+                                                    <Link
+                                                        to={`/app/alunos/${aluno.id}`}
+                                                        style={{ textDecoration: 'none', color: 'inherit' }}
+                                                    >
+                                                        <Typography fontWeight={600} sx={{ '&:hover': { textDecoration: 'underline' } }}>
+                                                            {aluno.nome}
+                                                        </Typography>
+                                                    </Link>
                                                     <Chip label={aluno.turma} size="small" />
                                                 </Box>
                                             }

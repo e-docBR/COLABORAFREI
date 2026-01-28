@@ -36,7 +36,12 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
     from flask import g
     from loguru import logger
     logger.info("Building dashboard metrics. g.tenant_id: {}, g.academic_year_id: {}", getattr(g, 'tenant_id', None), getattr(g, 'academic_year_id', None))
-    total_alunos = session.execute(select(func.count(Aluno.id))).scalar_one() or 0
+    
+    total_alunos = session.query(func.count(Aluno.id)).scalar() or 0
+    
+    # For turmas, we need distinct count.
+    # We can use session.query(func.distinct(Aluno.turma)).count() 
+    # but the Aluno.turma normalization was there for a reason.
     normalized_turma = func.trim(
         func.replace(
             func.replace(func.upper(Aluno.turma), " ANO ", " "),
@@ -44,18 +49,12 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
             " ",
         )
     )
-    total_turmas = session.execute(select(func.count(func.distinct(normalized_turma)))).scalar_one() or 0
-    media_geral = session.execute(select(func.avg(Nota.total))).scalar_one()
+    total_turmas = session.query(func.count(func.distinct(normalized_turma))).scalar() or 0
+    
+    media_geral = session.query(func.avg(Nota.total)).scalar()
     media_geral_value = float(media_geral) if media_geral is not None else 0.0
 
-    alunos_em_risco = (
-        session.execute(
-            select(func.count(func.distinct(Nota.aluno_id))).where(Nota.total < 50)
-        ).scalar_one()
-
-
-        or 0
-    )
+    alunos_em_risco = session.query(func.count(func.distinct(Nota.aluno_id))).filter(Nota.total < 50).scalar() or 0
 
     return DashboardAnalytics(
         total_alunos=total_alunos,

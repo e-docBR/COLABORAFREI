@@ -18,6 +18,8 @@ class UsuarioSchema(BaseModel):
     aluno_id: Optional[int] = None
     photo_url: Optional[str] = None
     must_change_password: bool = False
+    tenant_id: Optional[int] = None
+    tenant_name: Optional[str] = None
     aluno: Optional[AlunoSimpleSchema] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -41,6 +43,7 @@ class UsuarioUpdate(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+    tenant_slug: Optional[str] = None
 
 class LoginResponse(BaseModel):
     access_token: str

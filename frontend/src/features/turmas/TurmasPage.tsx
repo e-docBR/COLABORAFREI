@@ -16,7 +16,7 @@ import {
   Avatar
 } from "@mui/material";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 import GroupIcon from "@mui/icons-material/Group";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
@@ -48,7 +48,18 @@ const getPerformanceColor = (media: number, theme: any) => {
 
 export const TurmasPage = () => {
   const theme = useTheme();
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") || "";
+
+  const setSearch = (value: string) => {
+    if (value) {
+      searchParams.set("q", value);
+    } else {
+      searchParams.delete("q");
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const { data, isLoading, isError } = useListTurmasQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true

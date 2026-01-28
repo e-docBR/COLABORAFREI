@@ -149,6 +149,11 @@ def register(parent: Blueprint) -> None:
             )
 
             session.refresh(nota)
+            
+            # Invalidate cache
+            from ...core.cache import invalidate_tenant_cache
+            invalidate_tenant_cache()
+            
             return jsonify(serialize_nota_row(nota))
 
     parent.register_blueprint(bp)

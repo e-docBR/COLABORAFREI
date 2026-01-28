@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useMemo, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 
 import { useListAlunosQuery, useListTurmasQuery, useCreateAlunoMutation } from "../../lib/api";
 import { useAppSelector } from "../../app/hooks";
@@ -49,7 +49,18 @@ const getMediaColor = (media?: number | null): "default" | "success" | "warning"
 
 
 export const AlunosPage = () => {
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") || "";
+
+  const setSearch = (value: string) => {
+    if (value) {
+      searchParams.set("q", value);
+    } else {
+      searchParams.delete("q");
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const [turno, setTurno] = useState("");
   const [turma, setTurma] = useState("");
   const [open, setOpen] = useState(false);

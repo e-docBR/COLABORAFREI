@@ -19,9 +19,16 @@ type DashboardKpis = {
   alunos_em_risco: number;
 };
 
+export type PublicTenant = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 type LoginRequest = {
   username: string;
   password: string;
+  tenant_slug?: string;
 };
 
 type LoginResponse = {
@@ -35,6 +42,8 @@ type LoginResponse = {
     aluno_id?: number | null;
     photo_url?: string;
     must_change_password?: boolean;
+    tenant_id?: number | null;
+    tenant_name?: string;
   };
 };
 
@@ -262,6 +271,11 @@ export const api = createApi({
         headers.set("x-academic-year-id", academicYearId.toString());
       }
 
+      const tenantId = state.app.tenantId;
+      if (tenantId) {
+        headers.set("X-Tenant-ID", tenantId.toString());
+      }
+
       return headers;
     }
   }),
@@ -273,6 +287,9 @@ export const api = createApi({
         method: "POST",
         body
       })
+    }),
+    listPublicTenants: builder.query<PublicTenant[], void>({
+      query: () => "/auth/tenants"
     }),
     getDashboardKpis: builder.query<DashboardKpis, void>({
       query: () => "/dashboard/kpis",
@@ -408,9 +425,16 @@ export const api = createApi({
       query: () => "/usuarios/me",
       providesTags: ["Usuarios"]
     }),
-    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean; target_type?: string; target_value?: string }[], void>({
+    listComunicados: builder.query<{ id: number; titulo: string; conteudo: string; autor: string; data_envio: string; arquivado?: boolean; target_type?: string; target_value?: string; is_read?: boolean }[], void>({
       query: () => "/comunicados",
       providesTags: ["Comunicados"]
+    }),
+    markComunicadoRead: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/comunicados/${id}/read`,
+        method: "POST"
+      }),
+      invalidatesTags: ["Comunicados"]
     }),
     createComunicado: builder.mutation<void, { titulo: string; conteudo: string; target_type: string; target_value?: string }>({
       query: (body) => ({
@@ -510,7 +534,7 @@ export const api = createApi({
       query: () => "/admin/tenants",
       providesTags: ["Usuarios"] // Or a new 'Admin' tag
     }),
-    createTenant: builder.mutation<void, { name: string; slug: string; domain?: string; initial_year?: string }>({
+    createTenant: builder.mutation<void, { name: string; slug: string; initial_year: string; domain?: string; admin_email?: string; admin_password?: string }>({
       query: (body) => ({
         url: "/admin/tenants",
         method: "POST",
@@ -525,12 +549,28 @@ export const api = createApi({
         body
       }),
       invalidatesTags: ["Usuarios", "Dashboard"]
+    }),
+    updateTenant: builder.mutation<void, { id: number; name?: string; is_active?: boolean; domain?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/admin/tenants/${id}`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: ["Usuarios"]
+    }),
+    deleteTenant: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/admin/tenants/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Usuarios"]
     })
   })
 });
 
 export const {
   useLoginMutation,
+  useListPublicTenantsQuery,
   useGetDashboardKpisQuery,
   useGetTeacherDashboardQuery,
   useGetAlunoQuery,
@@ -552,6 +592,7 @@ export const {
   useDeleteUsuarioMutation,
   useGetMeQuery,
   useListComunicadosQuery,
+  useMarkComunicadoReadMutation,
   useCreateComunicadoMutation,
   useUpdateComunicadoMutation,
   useDeleteComunicadoMutation,
@@ -567,6 +608,8 @@ export const {
   useListAcademicYearsQuery,
   useListTenantsQuery,
   useCreateTenantMutation,
-  useAddAcademicYearToTenantMutation
+  useAddAcademicYearToTenantMutation,
+  useUpdateTenantMutation,
+  useDeleteTenantMutation
 } = api;
 

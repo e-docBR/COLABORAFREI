@@ -99,7 +99,17 @@ export const TurmaDetailPage = () => {
               const situacao = formatSituacao(aluno.situacao);
               return (
                 <TableRow key={aluno.id} hover>
-                  <TableCell>{aluno.nome}</TableCell>
+                  <TableCell>
+                    <Link
+                      component={RouterLink}
+                      to={`/app/alunos/${aluno.id}`}
+                      color="inherit"
+                      underline="hover"
+                      fontWeight={600}
+                    >
+                      {aluno.nome}
+                    </Link>
+                  </TableCell>
                   <TableCell>{aluno.matricula}</TableCell>
                   <TableCell>{aluno.media ? aluno.media.toFixed(1) : "-"}</TableCell>
                   <TableCell>

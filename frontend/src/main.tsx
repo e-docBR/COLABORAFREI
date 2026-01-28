@@ -13,7 +13,7 @@ const Root = () => {
     <Provider store={store}>
       <AppThemeProvider>
         <CssBaseline />
-        <RouterProvider router={appRouter} />
+        <RouterProvider router={appRouter} future={{ v7_startTransition: true }} />
       </AppThemeProvider>
     </Provider>
   );

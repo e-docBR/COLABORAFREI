@@ -2,10 +2,12 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface AppState {
     academicYearId: number | null;
+    tenantId: number | null;
 }
 
 const initialState: AppState = {
-    academicYearId: null, // If null, backend defaults to current
+    academicYearId: null,
+    tenantId: null,
 };
 
 const appSlice = createSlice({
@@ -15,8 +17,11 @@ const appSlice = createSlice({
         setAcademicYearId: (state, action: PayloadAction<number | null>) => {
             state.academicYearId = action.payload;
         },
+        setTenantId: (state, action: PayloadAction<number | null>) => {
+            state.tenantId = action.payload;
+        },
     },
 });
 
-export const { setAcademicYearId } = appSlice.actions;
+export const { setAcademicYearId, setTenantId } = appSlice.actions;
 export const appReducer = appSlice.reducer;

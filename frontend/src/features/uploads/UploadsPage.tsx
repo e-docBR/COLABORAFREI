@@ -33,25 +33,41 @@ export const UploadsPage = () => {
     skip: !currentJobId
   });
 
+  const [queuedStartTime, setQueuedStartTime] = useState<number | null>(null);
+
   useEffect(() => {
     if (jobStatus) {
       if (jobStatus.status === "finished") {
         const { count, logs } = jobStatus.result || { count: 0, logs: [] };
-        let msg = `Concluído! ${count} registros.`;
+        let msg = `Concluído! ${count} registros processados.`;
         if (logs && logs.length > 0) {
-          msg += ` (${logs.length} avisos - ver console)`;
+          msg += ` (${logs.length} avisos encontrados)`;
           console.warn("Logs de processamento:", logs);
         }
         setFeedback({ type: "success", message: msg });
         setCurrentJobId(null);
+        setQueuedStartTime(null);
       } else if (jobStatus.status === "failed") {
-        setFeedback({ type: "error", message: "Erro no processamento do arquivo." });
+        setFeedback({ type: "error", message: "Erro no processamento do arquivo. Verifique o formato do PDF." });
         setCurrentJobId(null);
+        setQueuedStartTime(null);
+      } else if (jobStatus.status === "queued") {
+        if (!queuedStartTime) {
+          setQueuedStartTime(Date.now());
+        } else if (Date.now() - queuedStartTime > 15000) {
+          setFeedback({
+            type: "error",
+            message: "O processamento está demorando mais que o esperado. O serviço de ingestão pode estar temporariamente offline."
+          });
+        } else {
+          setFeedback({ type: "info", message: "Arquivo na fila... Aguardando processamento." });
+        }
       } else {
         setFeedback({ type: "info", message: `Processando arquivo... Status: ${jobStatus.status}` });
+        setQueuedStartTime(null);
       }
     }
-  }, [jobStatus]);
+  }, [jobStatus, queuedStartTime]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];

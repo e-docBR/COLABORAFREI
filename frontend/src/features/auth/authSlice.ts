@@ -11,8 +11,10 @@ interface AuthState {
     aluno_id?: number | null;
     photo_url?: string;
     must_change_password?: boolean;
+    tenant_id?: number | null;
+    tenant_name?: string;
   };
-}
+};
 
 const initialState: AuthState = {
   accessToken: undefined,

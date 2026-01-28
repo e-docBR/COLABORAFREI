@@ -98,17 +98,64 @@ def register_cli(app):
                         )
                     )
 
-            admin = session.query(Usuario).filter(Usuario.username == "admin").first()
+            click.secho("Demo data seeded (includes admin/admin).", fg="green")
+
+    @app.cli.command("create-superadmin")
+    @click.option("--username", default="superadmin", help="Super Admin username")
+    @click.option("--password", default="superadmin", help="Super Admin password")
+    def create_superadmin_command(username, password):
+        """Create a super admin user."""
+        Base.metadata.create_all(bind=engine)
+        with session_scope() as session:
+            admin = session.query(Usuario).filter(Usuario.username == username).first()
             if not admin:
                 admin = Usuario(
-                    username="admin",
-                    password_hash=hash_password("admin"),
+                    username=username,
+                    password_hash=hash_password(password),
+                    role="super_admin",
+                    is_admin=True,
+                    tenant_id=None
+                )
+                session.add(admin)
+                click.secho(f"Super Admin user '{username}' created with password '{password}'.", fg="green")
+            else:
+                admin.password_hash = hash_password(password)
+                click.secho(f"Super Admin user '{username}' updated with password '{password}'.", fg="yellow")
+
+    @app.cli.command("create-admin")
+    @click.option("--username", default="admin", help="Admin username")
+    @click.option("--password", default="admin", help="Admin password")
+    def create_admin_command(username, password):
+        """Create an admin user and default tenant/year if they don't exist."""
+        Base.metadata.create_all(bind=engine)
+        with session_scope() as session:
+            tenant = session.query(Tenant).filter(Tenant.slug == "default").first()
+            if not tenant:
+                tenant = Tenant(name="Escola ColaboraFREI", slug="default")
+                session.add(tenant)
+                session.flush()
+                click.echo(f"Tenant 'default' created.")
+
+            year = session.query(AcademicYear).filter(AcademicYear.tenant_id == tenant.id, AcademicYear.label == "2026").first()
+            if not year:
+                year = AcademicYear(tenant_id=tenant.id, label="2026", is_current=True)
+                session.add(year)
+                session.flush()
+                click.echo(f"Academic year '2026' created.")
+
+            admin = session.query(Usuario).filter(Usuario.username == username).first()
+            if not admin:
+                admin = Usuario(
+                    username=username,
+                    password_hash=hash_password(password),
                     role="admin",
                     is_admin=True,
                     tenant_id=tenant.id
                 )
                 session.add(admin)
-            click.secho("Demo data seeded (includes admin/admin).", fg="green")
+                click.secho(f"Admin user '{username}' created with password '{password}'.", fg="green")
+            else:
+                click.secho(f"User '{username}' already exists.", fg="yellow")
 
     @app.cli.command("reprocess-pdfs")
     def reprocess_pdfs_command():

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, createContext, useContext } from "react";
-import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from "@mui/material/styles";
+import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from "@mui/material";
 
 import { tokens } from "./tokens";
 

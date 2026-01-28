@@ -1,6 +1,6 @@
 """Alunos endpoints."""
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt, jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 
 from ...core.database import session_scope
 from ...services.aluno_service import AlunoService
@@ -21,8 +21,9 @@ def register(parent: Blueprint) -> None:
         turma = request.args.get("turma")
         query_text = request.args.get("q")
 
+        user_id = int(get_jwt_identity())
         with session_scope() as session:
-            service = AlunoService(session)
+            service = AlunoService(session, user_id=user_id)
             result = service.list_alunos(
                 page=page,
                 per_page=per_page,
@@ -44,8 +45,9 @@ def register(parent: Blueprint) -> None:
             if not aluno_claim_id or int(aluno_claim_id) != int(aluno_id):
                 return jsonify({"error": "Acesso restrito"}), 403
                 
+        user_id = int(get_jwt_identity())
         with session_scope() as session:
-            service = AlunoService(session)
+            service = AlunoService(session, user_id=user_id)
             aluno_detail = service.get_aluno_details(aluno_id)
             
             if not aluno_detail:
@@ -60,8 +62,9 @@ def register(parent: Blueprint) -> None:
             return jsonify({"error": "Acesso negado. Apenas administradores podem criar alunos."}), 403
             
         data = request.get_json()
+        user_id = int(get_jwt_identity())
         with session_scope() as session:
-            service = AlunoService(session)
+            service = AlunoService(session, user_id=user_id)
             aluno = service.create_aluno(data)
             return jsonify(aluno.model_dump()), 201
 
@@ -72,8 +75,9 @@ def register(parent: Blueprint) -> None:
             return jsonify({"error": "Acesso negado. Apenas administradores podem editar alunos."}), 403
             
         data = request.get_json()
+        user_id = int(get_jwt_identity())
         with session_scope() as session:
-            service = AlunoService(session)
+            service = AlunoService(session, user_id=user_id)
             aluno = service.update_aluno(aluno_id, data)
             if not aluno:
                 return jsonify({"error": "Aluno não encontrado"}), 404
@@ -85,11 +89,43 @@ def register(parent: Blueprint) -> None:
         if "admin" not in (get_jwt().get("roles") or []):
             return jsonify({"error": "Acesso negado. Apenas administradores podem excluir alunos."}), 403
             
+        user_id = int(get_jwt_identity())
         with session_scope() as session:
-            service = AlunoService(session)
+            service = AlunoService(session, user_id=user_id)
             if service.delete_aluno(aluno_id):
                 return "", 204
             return jsonify({"error": "Aluno não encontrado"}), 404
 
-    parent.register_blueprint(bp)
+    @bp.get("/alunos/<int:aluno_id>/boletim/pdf")
+    @jwt_required()
+    def download_bulletin_pdf(aluno_id: int):
+        from flask import send_file, g
+        from ...services.document_service import DocumentService
+        
+        with session_scope() as session:
+            service = AlunoService(session)
+            aluno_data = service.get_bulletin_data(aluno_id)
+            
+            if not aluno_data:
+                return jsonify({"error": "Aluno não encontrado"}), 404
+            
+            school_name = g.get("tenant").name if g.get("tenant") else "ColaboraFREI"
+            year_label = "2026" # Fallback
+            if g.get("academic_year_id"):
+                 from ...models.academic_year import AcademicYear
+                 year = session.get(AcademicYear, g.academic_year_id)
+                 if year:
+                     year_label = year.label
 
+            html = DocumentService.render_bulletin_html(aluno_data, school_name, year_label)
+            pdf_bytes = DocumentService.generate_pdf_from_html(html)
+            
+            filename = f"Boletim_{aluno_data['nome'].replace(' ', '_')}.pdf"
+            return send_file(
+                pdf_bytes,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=filename
+            )
+
+    parent.register_blueprint(bp)

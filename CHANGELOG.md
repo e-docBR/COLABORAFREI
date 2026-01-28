@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.3] - 2026-01-27
+
+### 🚀 Added
+- **🔍 Advanced Search Engine**:
+    - TopBar search is now fully functional and synchronized with URL query parameters (`?q=...`).
+    - Redirects to Alunos page automatically when searching from the Dashboard.
+- **🖱️ Interactive Reports**:
+    - Student names in all list views (Classes, Teacher Dashboard) are now clickable links to full student reports.
+
+### 🔧 Fixes & Stability
+- **🛡️ Multi-Tenant Engineering**:
+    - Fixed mandatory ORM filtering for functional queries (`count`, `avg`, `distinct`) ensuring 100% data isolation in Dashboard KPIs.
+    - Resolved "MultipleResultsFound" crash in dashboard services by enforcing scalar results.
+- **⚡ Background Processing**:
+    - **Worker Resilience**: Improved Redis connection stability for PDF ingestion with automated retries and socket timeouts.
+    - **Proactive Monitoring**: Frontend now detects if the worker is offline and provides real-time feedback to users during uploads.
+- **🎨 UI/UX Refinements**:
+    - **Dynamic Branding**: Sidebar now dynamically displays the institution's name and initials.
+    - **Smart Login**: Conditionally hides the "Central / Super Admin" option for student/responsible profiles.
+- **📈 Performance**:
+    - Implemented eager loading for tenant relationships in `/usuarios/me`, reducing API latency.
+
 ## [0.9.2] - 2026-01-27
 
 ### 🔧 Fixes

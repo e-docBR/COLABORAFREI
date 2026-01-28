@@ -62,9 +62,24 @@ def receive_do_orm_execute(orm_execute_state):
          return
 
     # Append WHERE tenant_id = X AND academic_year_id = Y
+    from loguru import logger
+    
+    # 3. Identify target classes (from mappers or directly from tables)
+    target_classes = set()
     for mapper in orm_execute_state.all_mappers:
-        target_cls = mapper.class_
-        
+        target_classes.add(mapper.class_)
+    
+    if not target_classes:
+        # Fallback for count/avg where all_mappers might be empty
+        from sqlalchemy.sql.schema import Table
+        for from_obj in orm_execute_state.statement.froms:
+            if isinstance(from_obj, Table):
+                # Try to find the model class for this table name
+                for mapper in Base.registry.mappers:
+                    if mapper.local_table == from_obj:
+                        target_classes.add(mapper.class_)
+    
+    for target_cls in target_classes:
         # Filter by tenant_id if present
         if hasattr(target_cls, "tenant_id"):
             from sqlalchemy import or_

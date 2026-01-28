@@ -23,6 +23,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   IconButton,
   Dialog,
@@ -85,6 +86,32 @@ export const AlunoDetailPage = () => {
     }
   };
 
+  const token = useAppSelector((state) => state.auth.accessToken);
+
+  const handleDownloadPdf = async () => {
+    if (!alunoId || !token) return;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+
+    try {
+      const response = await fetch(`${baseUrl}/alunos/${alunoId}/boletim/pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error("Falha ao gerar PDF");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Boletim_${data?.nome.replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro no download", error);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -108,6 +135,14 @@ export const AlunoDetailPage = () => {
           <Typography color="text.primary">{data.nome}</Typography>
         </Breadcrumbs>
         <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownloadPdf}
+          >
+            Baixar PDF
+          </Button>
           {isAdmin && (
             <>
               <Button

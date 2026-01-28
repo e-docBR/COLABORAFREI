@@ -1,4 +1,5 @@
 from typing import Optional, List
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.repositories.usuario_repository import UsuarioRepository
@@ -11,13 +12,26 @@ class UsuarioService:
     def __init__(self, session: Session):
         self.repository = UsuarioRepository(session)
 
-    def authenticate(self, username: str, password: str) -> LoginResponse:
+    def authenticate(self, username: str, password: str, tenant_slug: Optional[str] = None) -> LoginResponse:
         user = self.repository.get_by_username(username)
         if not user or not verify_password(password, user.password_hash):
             raise UnauthorizedError("Usuário ou senha inválidos")
 
+        # If tenant_slug is provided, verify user belongs to it (unless super_admin)
+        if tenant_slug and user.role != "super_admin":
+            from app.models.tenant import Tenant
+            tenant = self.repository.session.execute(
+                select(Tenant).where(Tenant.slug == tenant_slug)
+            ).scalar_one_or_none()
+            
+            if not tenant or user.tenant_id != tenant.id:
+                raise UnauthorizedError("Usuário não pertence a esta escola")
+
         roles = [user.role] if user.role else []
-        extra_claims = {"aluno_id": user.aluno_id}
+        extra_claims = {
+            "aluno_id": user.aluno_id,
+            "tenant_id": user.tenant_id
+        }
         tokens = generate_tokens(identity=str(user.id), roles=roles, extra_claims=extra_claims)
         
         # Build schema to return

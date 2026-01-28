@@ -15,6 +15,15 @@ import { useAppSelector } from "../../app/hooks";
 
 const appBasePath = "/app";
 
+const getInitials = (name: string) => {
+  return name
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 const staffNavItems = [
   { label: "Dashboard", icon: <DashboardIcon />, path: appBasePath },
   { label: "Alunos", icon: <PeopleIcon />, path: `${appBasePath}/alunos` },
@@ -84,7 +93,7 @@ export const Sidebar = ({ mobile }: { mobile?: boolean }) => {
             fontWeight: 700
           }}
         >
-          FR
+          {getInitials(user?.tenant_name || "FR")}
         </Avatar>
         <Box flex={1}>
           <Typography
@@ -93,14 +102,14 @@ export const Sidebar = ({ mobile }: { mobile?: boolean }) => {
             lineHeight={1.3}
             color="text.primary"
           >
-            Colégio Frei Ronaldo
+            {user?.tenant_name || "Plataforma Colabora"}
           </Typography>
           <Typography
             variant="caption"
             color="text.secondary"
             fontSize="0.75rem"
           >
-            Boletins Inteligentes
+            Gerenciamento Acadêmico
           </Typography>
         </Box>
       </Box>

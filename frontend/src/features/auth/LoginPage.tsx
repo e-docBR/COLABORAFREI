@@ -24,7 +24,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAppDispatch } from "../../app/hooks";
 import { setCredentials } from "./authSlice";
-import { useLoginMutation } from "../../lib/api";
+import { setTenantId } from "../app/appSlice";
+import { useLoginMutation, useListPublicTenantsQuery } from "../../lib/api";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 export const LoginPage = () => {
@@ -70,6 +71,8 @@ export const LoginPage = () => {
   });
   const [rememberMe, setRememberMe] = useState(() => readStorage("colabora.login.remember", "true") === "true");
   const [login, { isLoading }] = useLoginMutation();
+  const { data: schools } = useListPublicTenantsQuery();
+  const [selectedSchool, setSelectedSchool] = useState(() => readStorage("colabora.login.school", "central"));
 
   const resolveErrorMessage = (err: unknown) => {
     if (err && typeof err === "object" && "status" in err) {
@@ -98,8 +101,15 @@ export const LoginPage = () => {
     event.preventDefault();
     setError(null);
     try {
-      const response = await login({ username, password }).unwrap();
+      const response = await login({
+        username,
+        password,
+        tenant_slug: selectedSchool !== "central" ? selectedSchool : undefined
+      }).unwrap();
       dispatch(setCredentials(response));
+      if (response.user?.tenant_id) {
+        dispatch(setTenantId(response.user.tenant_id));
+      }
       if (response.user?.must_change_password) {
         navigate("/alterar-senha", { replace: true });
       } else {
@@ -121,7 +131,8 @@ export const LoginPage = () => {
   useEffect(() => {
     localStorage.setItem("colabora.login.role", selectedRole);
     localStorage.setItem("colabora.login.remember", rememberMe.toString());
-  }, [selectedRole, rememberMe]);
+    localStorage.setItem("colabora.login.school", selectedSchool);
+  }, [selectedRole, rememberMe, selectedSchool]);
 
   useEffect(() => {
     const optionExists = roleOptions.some((role) => role.value === selectedRole);
@@ -129,6 +140,18 @@ export const LoginPage = () => {
       setSelectedRole(roleOptions[0].value);
     }
   }, [roleOptions, selectedRole]);
+
+  useEffect(() => {
+    if (isStudentFlow && selectedSchool === "central" && schools && schools.length > 0) {
+      setSelectedSchool(schools[0].slug);
+    }
+  }, [isStudentFlow, selectedSchool, schools]);
+
+  useEffect(() => {
+    if (schools && schools.length === 1 && !selectedSchool) {
+      setSelectedSchool(schools[0].slug);
+    }
+  }, [schools, selectedSchool]);
 
   const heroHighlights = [
     { label: "Integração automática", value: "PDF ➝ KPIs" },
@@ -238,6 +261,31 @@ export const LoginPage = () => {
                 </Typography>
               </Stack>
               <Stack component="form" gap={3} onSubmit={handleSubmit}>
+                <FormControl fullWidth>
+                  <InputLabel id="school-label">Escola / Unidade</InputLabel>
+                  <Select
+                    labelId="school-label"
+                    label="Escola / Unidade"
+                    value={selectedSchool}
+                    displayEmpty
+                    onChange={(event: SelectChangeEvent<string>) => setSelectedSchool(event.target.value as string)}
+                  >
+                    {!isStudentFlow && (
+                      <MenuItem value="central">
+                        <em>Central / Super Admin</em>
+                      </MenuItem>
+                    )}
+                    {schools?.map((school) => (
+                      <MenuItem key={school.slug} value={school.slug}>
+                        {school.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>
+                    Selecione a unidade que deseja acessar.
+                  </FormHelperText>
+                </FormControl>
+
                 <FormControl fullWidth>
                   <InputLabel id="perfil-label">Perfil</InputLabel>
                   <Select

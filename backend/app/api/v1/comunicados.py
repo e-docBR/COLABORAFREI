@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy import select, desc, or_
 
 from ...core.database import session_scope
-from ...models import Comunicado, Aluno, Usuario
+from ...models import Comunicado, Aluno, Usuario, ComunicadoLeitura
 
 def register(parent: Blueprint) -> None:
     bp = Blueprint("comunicados", __name__)
@@ -14,42 +14,43 @@ def register(parent: Blueprint) -> None:
         user_id = int(get_jwt_identity())
         claims = get_jwt()
         roles = claims.get("roles", [])
+        
         with session_scope() as session:
             has_permission = any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles)
+            
             if has_permission:
-                # Admins/Staff see all messages they authored OR all messages if admin
-                stm = select(Comunicado).order_by(desc(Comunicado.data_envio))
-                # Optionally filter by author if not full admin? For now, let staff see all.
+                # Staff see everything
+                results = session.query(Comunicado).order_by(desc(Comunicado.data_envio)).all()
             else:
                 aluno_id = claims.get("aluno_id")
-                # Aluno/Responsavel sees:
-                # 1. Target = TODOS
-                # 2. Target = TURMA:<sua_turma>
-                # 3. Target = ALUNO:<seu_id>
-                
-                # We need to find the student's turma first
                 turma_slug = None
                 if aluno_id:
                     aluno = session.get(Aluno, aluno_id)
-                    if aluno and aluno.turma:
-                         # Normalize turma to slug-like if needed, but we store exact string in target often
-                         # Let's assume target_value matches 'turma' field for now
-                         turma_slug = aluno.turma
+                    if aluno:
+                        turma_slug = aluno.turma
 
-                # User requested strictly class-related messages (plus personal)
-                filters = []
+                # Build filters for students
+                # 1. Always see TODOS
+                # 2. See their TURMA
+                # 3. See their PERSONAL (ALUNO)
+                filters = [Comunicado.target_type == "TODOS"]
                 if turma_slug:
                     filters.append((Comunicado.target_type == "TURMA") & (Comunicado.target_value == turma_slug))
                 if aluno_id:
                     filters.append((Comunicado.target_type == "ALUNO") & (Comunicado.target_value == str(aluno_id)))
                 
-                if not filters:
-                     stm = select(Comunicado).where(1 == 0) # No match
-                else:
-                     stm = select(Comunicado).where(or_(*filters)).order_by(desc(Comunicado.data_envio))
+                results = session.query(Comunicado).filter(or_(*filters)).order_by(desc(Comunicado.data_envio)).all()
 
-            results = session.execute(stm).scalars().all()
-            return jsonify([comm.to_dict() for comm in results])
+            # Get read IDs for this user
+            read_ids = {r.comunicado_id for r in session.query(ComunicadoLeitura).filter_by(usuario_id=user_id).all()}
+
+            output = []
+            for comm in results:
+                d = comm.to_dict()
+                d["is_read"] = comm.id in read_ids
+                output.append(d)
+
+            return jsonify(output)
 
     @bp.post("/comunicados")
     @jwt_required()
@@ -115,10 +116,6 @@ def register(parent: Blueprint) -> None:
     def delete_comunicado(comunicado_id: int):
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if "admin" not in roles and "coordenacao" not in roles:
-             # Let's say only admin/coord can delete globally. Or author.
-             pass
-
         user_id = int(get_jwt_identity())
         
         with session_scope() as session:
@@ -134,5 +131,14 @@ def register(parent: Blueprint) -> None:
             session.delete(comunicado)
         
         return jsonify({"message": "Removido com sucesso"}), 200
+
+    @bp.post("/comunicados/<int:comunicado_id>/read")
+    @jwt_required()
+    def mark_read(comunicado_id: int):
+        user_id = int(get_jwt_identity())
+        with session_scope() as session:
+            leitura = ComunicadoLeitura(comunicado_id=comunicado_id, usuario_id=user_id)
+            session.merge(leitura)
+        return jsonify({"message": "Lido"}), 200
 
     parent.register_blueprint(bp)

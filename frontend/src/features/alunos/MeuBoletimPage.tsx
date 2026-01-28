@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import GradeIcon from "@mui/icons-material/Grade";
+import DownloadIcon from "@mui/icons-material/Download";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import CircleIcon from "@mui/icons-material/Circle";
@@ -59,6 +60,32 @@ export const MeuBoletimPage = () => {
   const { data: comunicados } = useListComunicadosQuery(undefined, {
     skip: !alunoId
   });
+
+  const token = useAppSelector((state) => state.auth.accessToken);
+
+  const handleDownloadPdf = async () => {
+    if (!alunoId || !token) return;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+
+    try {
+      const response = await fetch(`${baseUrl}/alunos/${alunoId}/boletim/pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error("Falha ao gerar PDF");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Meu_Boletim_${data?.nome.replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro no download", error);
+    }
+  };
 
   if (!alunoId) {
     return <Alert severity="warning">Seu perfil não está associado a um aluno.</Alert>;
@@ -107,6 +134,16 @@ export const MeuBoletimPage = () => {
               </Typography>
             </Box>
           </Stack>
+          <Box mt={2} display="flex" justifyContent="flex-end">
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadPdf}
+            >
+              Baixar Meu Boletim (PDF)
+            </Button>
+          </Box>
         </CardContent>
       </Card>
 

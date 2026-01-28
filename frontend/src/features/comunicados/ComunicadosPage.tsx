@@ -44,7 +44,8 @@ import {
     useCreateComunicadoMutation,
     useListComunicadosQuery,
     useUpdateComunicadoMutation,
-    useDeleteComunicadoMutation
+    useDeleteComunicadoMutation,
+    useMarkComunicadoReadMutation
 } from "../../lib/api";
 import { useAppSelector } from "../../app/hooks";
 
@@ -54,6 +55,7 @@ export const ComunicadosPage = () => {
     const [createComunicado, { isLoading: isCreating }] = useCreateComunicadoMutation();
     const [updateComunicado] = useUpdateComunicadoMutation();
     const [deleteComunicado] = useDeleteComunicadoMutation();
+    const [markRead] = useMarkComunicadoReadMutation();
 
     const user = useAppSelector((state) => state.auth.user);
     const isAdmin = user?.role === "admin" || user?.role === "professor";
@@ -128,10 +130,29 @@ export const ComunicadosPage = () => {
         handleCloseMenu();
     };
 
+    const handleMarkRead = async (id: number, isRead?: boolean) => {
+        if (!isAdmin && !isRead) {
+            try {
+                await markRead(id).unwrap();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
+
     // Sort: Pinned/Active first, then by date desc
+    // Sort: Unread first (for students), then archived last, then by date desc
     const sortedComunicados = [...(comunicados ?? [])].sort((a, b) => {
+        // Archived always last
         if (a.arquivado && !b.arquivado) return 1;
         if (!a.arquivado && b.arquivado) return -1;
+
+        // For students, unread first
+        if (!isAdmin) {
+            if (!a.is_read && b.is_read) return -1;
+            if (a.is_read && !b.is_read) return 1;
+        }
+
         return new Date(b.data_envio).getTime() - new Date(a.data_envio).getTime();
     });
 
@@ -208,14 +229,16 @@ export const ComunicadosPage = () => {
                         <Card
                             key={comm.id}
                             elevation={0}
+                            onClick={() => handleMarkRead(comm.id, comm.is_read)}
                             sx={{
                                 borderRadius: 4,
                                 border: "1px solid",
-                                borderColor: comm.arquivado ? "transparent" : "divider",
+                                borderColor: comm.arquivado ? "transparent" : (comm.is_read || isAdmin ? "divider" : "primary.main"),
                                 bgcolor: comm.arquivado ? "action.hover" : "background.paper",
                                 opacity: comm.arquivado ? 0.7 : 1,
                                 transition: "all 0.3s ease",
                                 position: "relative",
+                                cursor: !isAdmin && !comm.is_read ? "pointer" : "default",
                                 overflow: "visible",
                                 "&:hover": {
                                     borderColor: "primary.main",
@@ -230,27 +253,33 @@ export const ComunicadosPage = () => {
                                     <HistoryIcon fontSize="small" />
                                 </Box>
                             ) : (
-                                <Box position="absolute" top={-10} right={20} sx={{ bgcolor: "warning.main", color: "white", borderRadius: "50%", p: 0.5, zIndex: 2 }}>
-                                    <PushPinIcon fontSize="small" sx={{ transform: "rotate(45deg)" }} />
-                                </Box>
+                                !isAdmin && !comm.is_read ? (
+                                    <Box position="absolute" top={-10} right={20} sx={{ bgcolor: "primary.main", color: "white", borderRadius: 2, px: 1, py: 0.2, zIndex: 2, fontWeight: 800, fontSize: "0.7rem", boxShadow: 2 }}>
+                                        NOVO
+                                    </Box>
+                                ) : (
+                                    <Box position="absolute" top={-10} right={20} sx={{ bgcolor: "warning.main", color: "white", borderRadius: "50%", p: 0.5, zIndex: 2 }}>
+                                        <PushPinIcon fontSize="small" sx={{ transform: "rotate(45deg)" }} />
+                                    </Box>
+                                )
                             )}
 
                             <CardHeader
                                 sx={{ pb: 1 }}
                                 avatar={
-                                    <Avatar sx={{ bgcolor: comm.arquivado ? "action.disabled" : "primary.main" }}>
+                                    <Avatar sx={{ bgcolor: comm.arquivado ? "action.disabled" : (comm.is_read || isAdmin ? "primary.main" : "primary.dark") }}>
                                         <CampaignIcon />
                                     </Avatar>
                                 }
                                 action={
                                     isAdmin && (
-                                        <IconButton onClick={(e) => handleOpenMenu(e, comm)}>
+                                        <IconButton onClick={(e) => { e.stopPropagation(); handleOpenMenu(e, comm); }}>
                                             <MoreVertIcon />
                                         </IconButton>
                                     )
                                 }
                                 title={
-                                    <Typography variant="h6" fontWeight={700}>
+                                    <Typography variant="h6" fontWeight={700} color={!isAdmin && !comm.is_read ? "primary.main" : "text.primary"}>
                                         {comm.titulo}
                                     </Typography>
                                 }

@@ -8,8 +8,9 @@ api_v1_bp = Blueprint("api_v1", __name__)
 @api_v1_bp.before_request
 def before_v1_request():
     from app.core.middleware import resolve_tenant_context
-    # Bypass for super_admin routes if needed
-    if request.blueprint == "api_v1.super_admin":
+    # Bypass for super_admin routes, auth/login and public tenants
+    if request.blueprint == "api_v1.super_admin" or \
+       request.endpoint in ["api_v1.auth.login", "api_v1.auth.list_public_tenants"]:
         return None
     return resolve_tenant_context()
 
