@@ -22,7 +22,7 @@ def register(parent: Blueprint) -> None:
             service = OcorrenciaService(session, user_id)
             
             # Authorization logic for listing
-            is_staff = any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles)
+            is_staff = any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles)
             
             target_aluno_id = None
             if not is_staff:
@@ -41,7 +41,7 @@ def register(parent: Blueprint) -> None:
     def create_ocorrencia():
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+        if not any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles):
             return jsonify({"error": "Acesso negado"}), 403
 
         data = request.json or {}
@@ -66,7 +66,7 @@ def register(parent: Blueprint) -> None:
     def update_ocorrencia(ocorrencia_id: int):
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+        if not any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles):
             return jsonify({"error": "Acesso negado"}), 403
 
         data = request.json or {}
@@ -91,7 +91,7 @@ def register(parent: Blueprint) -> None:
     def delete_ocorrencia(ocorrencia_id: int):
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+        if not any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles):
             return jsonify({"error": "Acesso negado"}), 403
 
         user_id = int(get_jwt_identity())

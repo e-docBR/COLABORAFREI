@@ -82,19 +82,9 @@ def receive_do_orm_execute(orm_execute_state):
     for target_cls in target_classes:
         # Filter by tenant_id if present
         if hasattr(target_cls, "tenant_id"):
-            from sqlalchemy import or_
-            # For Usuario, allow NULL tenant_id to support super_admin access
-            if target_cls.__name__ == "Usuario":
-                orm_execute_state.statement = orm_execute_state.statement.where(
-                    or_(
-                        target_cls.tenant_id == current_tenant,
-                        target_cls.tenant_id.is_(None)
-                    )
-                )
-            else:
-                orm_execute_state.statement = orm_execute_state.statement.where(
-                    target_cls.tenant_id == current_tenant
-                )
+            orm_execute_state.statement = orm_execute_state.statement.where(
+                target_cls.tenant_id == current_tenant
+            )
             
         # Filter by academic_year_id if present in 'g' and in model
         try:

@@ -77,12 +77,18 @@ export const LoginPage = () => {
   const resolveErrorMessage = (err: unknown) => {
     if (err && typeof err === "object" && "status" in err) {
       const apiError = err as FetchBaseQueryError;
-      const data = apiError.data;
+      const data = apiError.data as any;
       if (typeof data === "string") {
         return data;
       }
+
+      // Handle Pydantic validation errors (422)
+      if (data?.details && Array.isArray(data.details)) {
+        return data.details.map((d: any) => `${d.message}`).join(", ");
+      }
+
       if (data && typeof data === "object" && "error" in data) {
-        return String((data as { error?: string }).error || "Falha no login");
+        return String(data.error || "Falha no login");
       }
       if ("error" in apiError && typeof apiError.error === "string") {
         if (apiError.error.toLowerCase().includes("fetch")) {
@@ -142,16 +148,19 @@ export const LoginPage = () => {
   }, [roleOptions, selectedRole]);
 
   useEffect(() => {
-    if (isStudentFlow && selectedSchool === "central" && schools && schools.length > 0) {
-      setSelectedSchool(schools[0].slug);
+    if (schools && schools.length > 0) {
+      const schoolSlugs = schools.map(s => s.slug);
+      const isValid = schoolSlugs.includes(selectedSchool) || (!isStudentFlow && selectedSchool === "central");
+
+      if (!isValid) {
+        if (isStudentFlow) {
+          setSelectedSchool(schools[0].slug);
+        } else {
+          setSelectedSchool("central");
+        }
+      }
     }
   }, [isStudentFlow, selectedSchool, schools]);
-
-  useEffect(() => {
-    if (schools && schools.length === 1 && !selectedSchool) {
-      setSelectedSchool(schools[0].slug);
-    }
-  }, [schools, selectedSchool]);
 
   const heroHighlights = [
     { label: "Integração automática", value: "PDF ➝ KPIs" },
@@ -266,7 +275,11 @@ export const LoginPage = () => {
                   <Select
                     labelId="school-label"
                     label="Escola / Unidade"
-                    value={selectedSchool}
+                    value={
+                      (selectedSchool === "central" && !isStudentFlow) || (schools?.some(s => s.slug === selectedSchool))
+                        ? selectedSchool
+                        : ""
+                    }
                     displayEmpty
                     onChange={(event: SelectChangeEvent<string>) => setSelectedSchool(event.target.value as string)}
                   >

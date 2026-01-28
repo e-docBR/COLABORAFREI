@@ -34,7 +34,9 @@ import {
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
   coordenador: "Coordenador",
+  orientador: "Orientador",
   professor: "Professor",
+  diretor: "Diretor",
   aluno: "Aluno"
 };
 

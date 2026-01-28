@@ -48,13 +48,16 @@ export const Sidebar = ({ mobile }: { mobile?: boolean }) => {
       base.push({ label: "Escolas (SaaS)", icon: <DashboardIcon />, path: `${appBasePath}/admin/escolas` });
     }
 
-    if (isAdmin) {
+    if (user?.role === "admin" || user?.role === "super_admin") {
       base.splice(1, 0, { label: "Usuários", icon: <ManageAccountsIcon />, path: `${appBasePath}/usuarios` });
+    }
+
+    if (isAdmin) {
       base.push({ label: "Uploads", icon: <UploadFileIcon />, path: `${appBasePath}/uploads` });
       base.push({ label: "Audit Logs", icon: <ArticleIcon />, path: `${appBasePath}/audit-logs` });
     }
 
-    if (isAdmin || user?.role === "professor") {
+    if (isAdmin || user?.role === "professor" || user?.role === "orientador" || user?.role === "diretor") {
       base.push({ label: "Visão Professor", icon: <InsightsIcon />, path: `${appBasePath}/professor` });
     }
 

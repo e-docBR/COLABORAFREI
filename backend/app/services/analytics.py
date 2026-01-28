@@ -75,19 +75,34 @@ def build_teacher_dashboard(session: Session, query: str | None = None, turno: s
             stm = stm.where(Aluno.nome.ilike(term) | Aluno.matricula.ilike(term))
         return stm
 
-    # 1. Grade Distribution
-    # Intervals: 0-20, 20-40, 40-60, 60-80, 80-100
-    queries = [
-        (0, 20), (20, 40), (40, 60), (60, 80), (80, 101)
+    # 1. Student Performance Distribution (By Average)
+    # This reflects how many STUDENTS are in each performance bucket
+    dist = {
+        "0-20": 0,
+        "20-40": 0,
+        "40-60": 0,
+        "60-80": 0,
+        "80-100": 0
+    }
+    
+    # Subquery to get average per student
+    subq = select(Nota.aluno_id, func.avg(Nota.total).label("media")).join(Aluno)
+    subq = apply_filters(subq)
+    subq = subq.group_by(Nota.aluno_id).subquery()
+    
+    # Bucket queries
+    ranges = [
+        (0, 20, "0-20"),
+        (20, 40, "20-40"),
+        (40, 60, "40-60"),
+        (60, 80, "60-80"),
+        (80, 101, "80-100")
     ]
-    dist = {}
-    for start, end in queries:
-        stm = select(func.count(Nota.id)).join(Aluno).where(Nota.total >= start, Nota.total < end)
-        stm = apply_filters(stm)
-        
-        count = session.execute(stm).scalar_one()
-        label = f"{start}-{end}" if end <= 80 else f"{start}-100"
-        dist[label] = count
+    
+    for start, end, label in ranges:
+        stm_dist = select(func.count()).select_from(subq).where(subq.c.media >= start, subq.c.media < end)
+        count = session.execute(stm_dist).scalar() or 0
+        dist[label] = int(count)
 
     # 2. Risk Alerts (Simulated AI or Heuristic)
     # Fetch top 10 risky students based on grades < 60

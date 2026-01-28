@@ -2,9 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.9.3] - 2026-01-27
+## [1.0.0] - 2026-01-27
 
 ### 🚀 Added
+- **🛡️ Advanced RBAC (Role-Based Access Control)**:
+    - New profiles: **Orientador** and **Diretor** added to the management ecosystem.
+    - Specialized permissions: Coordenadores, Orientadores, and Diretores now have full management access to **Mural de Avisos** (Comunicados) and **Ocorrências**.
+    - Restricted access: Technical management of user accounts is now exclusive to `admin` and `super_admin` roles.
+- **📊 Teacher Dashboard Modernization**:
+    - New KPIs: **Total Students** and **Global Average** added for quick pedagogical insights.
+    - Improved Grade Distribution: Now reflects student average performance instead of raw grade counts.
+    - Refined UI/UX with modern aesthetics, glassmorphism elements, and improved tooltip clarity.
+
+### 🔧 Fixes & Stability
+- **🛡️ Multi-Tenant Engineering**:
+    - **Data Integrity**: Optimized ORM filters to ensure strict institution isolation while supporting safe super-admin access.
+    - **User Creation**: Newly created users now automatically inherit the institution context of the creator, preventing "orphan" users.
+    - **Database Migrations**: Executed data sanitation to link existing users to their respective institutions.
+- **⚡ Login & Auth Experience**:
+    - **Error Handling**: Enhanced UI to display detailed server validation messages (e.g., minimum password length).
+    - **MUI Stability**: Fixed "out-of-range" warnings in the school selector caused by race conditions during loading.
+    - **Session Recovery**: Improved tenant slug resolution during login to ensure a smoother entry experience.
+
+### 🚀 Added (Previous 0.9.3 highlights)
 - **🔍 Advanced Search Engine**:
     - TopBar search is now fully functional and synchronized with URL query parameters (`?q=...`).
     - Redirects to Alunos page automatically when searching from the Dashboard.

@@ -20,10 +20,16 @@ export const ChangePasswordPage = () => {
 
   const resolveErrorMessage = (err: unknown) => {
     if (err && typeof err === "object" && "data" in err) {
-      const data = (err as FetchBaseQueryError).data;
+      const data = (err as FetchBaseQueryError).data as any;
       if (typeof data === "string") return data;
+
+      // Handle Pydantic validation errors (422)
+      if (data?.details && Array.isArray(data.details)) {
+        return data.details.map((d: any) => `${d.message}`).join(", ");
+      }
+
       if (data && typeof data === "object" && "error" in data) {
-        return String((data as { error?: string }).error || "Falha ao alterar senha");
+        return String(data.error || "Falha ao alterar senha");
       }
     }
     return err instanceof Error ? err.message : "Falha ao alterar senha";
@@ -44,9 +50,9 @@ export const ChangePasswordPage = () => {
         updateUser(
           user
             ? {
-                ...user,
-                must_change_password: false
-              }
+              ...user,
+              must_change_password: false
+            }
             : undefined
         )
       );

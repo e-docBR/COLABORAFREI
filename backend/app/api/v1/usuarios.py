@@ -41,7 +41,7 @@ def serialize_usuario(usuario: Usuario) -> dict[str, object]:
 
 def _is_admin() -> bool:
     roles = get_jwt().get("roles") or []
-    return "admin" in roles
+    return "admin" in roles or "super_admin" in roles
 
 
 def register(parent: Blueprint) -> None:
@@ -116,6 +116,7 @@ def register(parent: Blueprint) -> None:
         if not username or not password:
             return jsonify({"error": "Usuário e senha são obrigatórios"}), 400
 
+        from flask import g
         with session_scope() as session:
             existing = session.query(Usuario).filter(Usuario.username == username).first()
             if existing:
@@ -133,6 +134,7 @@ def register(parent: Blueprint) -> None:
                 is_admin=bool(payload.get("is_admin")),
                 aluno_id=aluno_id,
                 must_change_password=payload.get("must_change_password", True),
+                tenant_id=getattr(g, 'tenant_id', None)
             )
             session.add(usuario)
             session.flush()

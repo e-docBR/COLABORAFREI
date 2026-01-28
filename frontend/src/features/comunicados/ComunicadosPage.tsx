@@ -58,7 +58,14 @@ export const ComunicadosPage = () => {
     const [markRead] = useMarkComunicadoReadMutation();
 
     const user = useAppSelector((state) => state.auth.user);
-    const isAdmin = user?.role === "admin" || user?.role === "professor";
+    const isAdmin = user?.role === "admin" ||
+        user?.role === "professor" ||
+        user?.role === "coordenacao" ||
+        user?.role === "coordenador" ||
+        user?.role === "direcao" ||
+        user?.role === "diretor" ||
+        user?.role === "orientacao" ||
+        user?.role === "orientador";
 
     const [open, setOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);

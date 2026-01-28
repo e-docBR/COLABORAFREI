@@ -188,7 +188,24 @@ export const TeacherDashboard = () => {
                                     <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: theme.palette.background.paper, borderRadius: 8, border: `1px solid ${theme.palette.divider}` }}
+                                        cursor={{ fill: 'transparent' }}
+                                        contentStyle={{
+                                            backgroundColor: theme.palette.background.paper,
+                                            borderRadius: 8,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                        }}
+                                        formatter={(value: any) => [value, "Alunos"]}
+                                        labelFormatter={(label: string) => {
+                                            const qualLabels: Record<string, string> = {
+                                                "0-20": "0-20 (Crítico)",
+                                                "20-40": "20-40 (Preocupante)",
+                                                "40-60": "40-60 (Em Atenção)",
+                                                "60-80": "60-80 (Bom)",
+                                                "80-100": "80-100 (Excelente)"
+                                            };
+                                            return qualLabels[label] || label;
+                                        }}
                                     />
                                     <Bar dataKey="count" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} barSize={40} />
                                 </BarChart>

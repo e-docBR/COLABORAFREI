@@ -16,7 +16,7 @@ def register(parent: Blueprint) -> None:
         roles = claims.get("roles", [])
         
         with session_scope() as session:
-            has_permission = any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles)
+            has_permission = any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles)
             
             if has_permission:
                 # Staff see everything
@@ -57,7 +57,7 @@ def register(parent: Blueprint) -> None:
     def create_comunicado():
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if "admin" not in roles and "professor" not in roles and "coordenacao" not in roles and "direcao" not in roles:
+        if not any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles):
             return jsonify({"error": "Acesso negado"}), 403
 
         data = request.json or {}
@@ -83,7 +83,7 @@ def register(parent: Blueprint) -> None:
     def update_comunicado(comunicado_id: int):
         claims = get_jwt()
         roles = claims.get("roles", [])
-        if not any(r in ["admin", "professor", "coordenacao", "direcao"] for r in roles):
+        if not any(r in ["admin", "professor", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles):
             return jsonify({"error": "Acesso negado"}), 403
 
         data = request.json or {}
@@ -124,7 +124,7 @@ def register(parent: Blueprint) -> None:
                 return jsonify({"error": "Comunicado não encontrado"}), 404
             
             # Permission check: Admin/Coord or Author
-            has_permission = "admin" in roles or "coordenacao" in roles or comunicado.autor_id == user_id
+            has_permission = any(r in ["admin", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"] for r in roles) or comunicado.autor_id == user_id
             if not has_permission:
                 return jsonify({"error": "Acesso negado"}), 403
 
