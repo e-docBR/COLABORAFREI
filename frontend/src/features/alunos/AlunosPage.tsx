@@ -144,7 +144,7 @@ export const AlunosPage = () => {
         </Typography>
       </Box>
 
-      {user?.role === "admin" && (
+      {user?.role && ["admin", "super_admin", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"].includes(user.role) && (
         <Box mb={3} display="flex" justifyContent="flex-end">
           <Button
             variant="contained"
@@ -291,12 +291,24 @@ export const AlunosPage = () => {
                       </Box>
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
+                      {aluno.status && (
+                        <Chip
+                          label={aluno.status}
+                          size="small"
+                          color={aluno.status === "Transferido" ? "warning" : "error"}
+                          sx={{
+                            height: 20,
+                            fontSize: "0.625rem",
+                            fontWeight: 600
+                          }}
+                        />
+                      )}
                       <Chip
                         label={aluno.media !== null && aluno.media !== undefined
                           ? `Média: ${aluno.media.toFixed(1)}`
                           : "Sem média"}
                         size="small"
-                        color={getMediaColor(aluno.media)}
+                        color={aluno.status ? "default" : getMediaColor(aluno.media)}
 
                         sx={{
                           height: 20,

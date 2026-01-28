@@ -43,6 +43,7 @@ class AlunoService:
                     nome=aluno.nome,
                     turma=aluno.turma,
                     turno=aluno.turno,
+                    status=aluno.status,
                     media=float(media) if media is not None else None,
                     faltas=int(faltas) if faltas is not None else 0
                 )
@@ -73,6 +74,7 @@ class AlunoService:
             nome=aluno.nome,
             turma=aluno.turma,
             turno=aluno.turno,
+            status=aluno.status,
             media=float(media) if media is not None else None,
             notas=notas_schema
         )
@@ -85,7 +87,8 @@ class AlunoService:
             matricula=aluno.matricula,
             nome=aluno.nome,
             turma=aluno.turma,
-            turno=aluno.turno
+            turno=aluno.turno,
+            status=aluno.status
         )
 
     def update_aluno(self, aluno_id: int, data: dict) -> Optional[AlunoListSchema]:
@@ -101,7 +104,8 @@ class AlunoService:
             matricula=updated.matricula,
             nome=updated.nome,
             turma=updated.turma,
-            turno=updated.turno
+            turno=updated.turno,
+            status=updated.status
         )
 
     def delete_aluno(self, aluno_id: int) -> bool:

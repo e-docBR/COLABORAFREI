@@ -58,7 +58,8 @@ def register(parent: Blueprint) -> None:
     @bp.post("/alunos")
     @jwt_required()
     def create_aluno():
-        if "admin" not in (get_jwt().get("roles") or []):
+        roles = get_jwt().get("roles") or []
+        if not any(r in roles for r in ["admin", "super_admin", "coordenador", "diretor", "orientador"]):
             return jsonify({"error": "Acesso negado. Apenas administradores podem criar alunos."}), 403
             
         data = request.get_json()
@@ -71,7 +72,8 @@ def register(parent: Blueprint) -> None:
     @bp.patch("/alunos/<int:aluno_id>")
     @jwt_required()
     def update_aluno(aluno_id: int):
-        if "admin" not in (get_jwt().get("roles") or []):
+        roles = get_jwt().get("roles") or []
+        if not any(r in roles for r in ["admin", "super_admin", "coordenador", "diretor", "orientador"]):
             return jsonify({"error": "Acesso negado. Apenas administradores podem editar alunos."}), 403
             
         data = request.get_json()
@@ -86,7 +88,8 @@ def register(parent: Blueprint) -> None:
     @bp.delete("/alunos/<int:aluno_id>")
     @jwt_required()
     def delete_aluno(aluno_id: int):
-        if "admin" not in (get_jwt().get("roles") or []):
+        roles = get_jwt().get("roles") or []
+        if not any(r in roles for r in ["admin", "super_admin", "coordenador", "diretor", "orientador"]):
             return jsonify({"error": "Acesso negado. Apenas administradores podem excluir alunos."}), 403
             
         user_id = int(get_jwt_identity())

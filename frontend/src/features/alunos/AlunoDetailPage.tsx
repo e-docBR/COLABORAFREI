@@ -38,7 +38,13 @@ import { EditNotaDialog } from "../notas/EditNotaDialog";
 import { AlunoForm } from "./AlunoForm";
 
 
-const formatSituacao = (value?: string | null) => {
+const formatSituacao = (value?: string | null, status?: string | null) => {
+  if (status) {
+    if (status === "Cancelado") return { label: "Cancelado", color: "error" as const };
+    if (status === "Transferido") return { label: "Transferido", color: "warning" as const };
+    if (status === "Desistente") return { label: "Desistente", color: "error" as const };
+  }
+
   if (!value) return { label: "-", color: "default" as const };
   const normalized = value.toUpperCase();
   if (normalized.startsWith("APR")) return { label: "Aprovado", color: "success" as const };
@@ -59,7 +65,7 @@ export const AlunoDetailPage = () => {
   });
 
   const user = useAppSelector((state) => state.auth.user);
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role && ["admin", "super_admin", "coordenacao", "coordenador", "direcao", "diretor", "orientacao", "orientador"].includes(user.role);
 
   const [editingNota, setEditingNota] = useState<AlunoNota | null>(null);
   const [editingAluno, setEditingAluno] = useState(false);
@@ -174,6 +180,14 @@ export const AlunoDetailPage = () => {
         <CardContent>
           <Typography variant="h4" fontWeight={600} gutterBottom>
             {data.nome}
+            {data.status && (
+              <Chip
+                label={data.status}
+                color={data.status === "Transferido" ? "warning" : "error"}
+                size="small"
+                sx={{ ml: 2, verticalAlign: "middle" }}
+              />
+            )}
           </Typography>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2} divider={<Divider flexItem orientation="vertical" />}>
             <Box>
@@ -194,8 +208,8 @@ export const AlunoDetailPage = () => {
               <Typography variant="body2" color="text.secondary">
                 Média geral
               </Typography>
-              <Typography fontWeight={600} color={data.media && data.media < 12 ? "error.main" : "success.main"}>
-                {typeof data.media === "number" ? data.media.toFixed(1) : "-"}
+              <Typography fontWeight={600} color={data.status ? "text.secondary" : (data.media && data.media < 50 ? "error.main" : "success.main")}>
+                {data.status ? "Inativo" : (typeof data.media === "number" ? data.media.toFixed(1) : "-")}
               </Typography>
             </Box>
           </Stack>
@@ -218,7 +232,7 @@ export const AlunoDetailPage = () => {
           </TableHead>
           <TableBody>
             {data.notas.map((nota) => {
-              const situacao = formatSituacao(nota.situacao);
+              const situacao = formatSituacao(nota.situacao, data.status);
               return (
                 <TableRow key={nota.id} hover>
                   <TableCell>{nota.disciplina}</TableCell>

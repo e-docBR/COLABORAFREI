@@ -22,18 +22,28 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import { useGetTurmaAlunosQuery } from "../../lib/api";
 
-const formatSituacao = (situacao?: string | null) => {
+const formatSituacao = (situacao?: string | null, status?: string | null) => {
+  // Manual status (Special situations) take precedence
+  if (status) {
+    if (status === "Cancelado") return { label: "Cancelado", color: "error" as const };
+    if (status === "Transferido") return { label: "Transferido", color: "warning" as const };
+    if (status === "Desistente") return { label: "Desistente", color: "error" as const };
+    return { label: status, color: "default" as const };
+  }
+
   if (!situacao) return { label: "Sem status", color: "default" as const };
-  if (situacao.toUpperCase().startsWith("APR")) {
+  const s = situacao.toUpperCase();
+
+  if (s.startsWith("APR")) {
     return { label: "Aprovado", color: "success" as const };
   }
-  if (situacao.toUpperCase() === "AR") {
+  if (s === "AR") {
     return { label: "Apr Rec", color: "success" as const };
   }
-  if (situacao.toUpperCase().startsWith("REP")) {
+  if (s.startsWith("REP")) {
     return { label: "Reprovado", color: "error" as const };
   }
-  if (situacao.toUpperCase().startsWith("ACC") || situacao.toUpperCase().startsWith("APCC")) {
+  if (s.startsWith("ACC") || s.startsWith("APCC")) {
     return { label: "APCC", color: "info" as const };
   }
   return { label: "Recuperação", color: "warning" as const };
@@ -96,7 +106,7 @@ export const TurmaDetailPage = () => {
           </TableHead>
           <TableBody>
             {data.alunos.map((aluno) => {
-              const situacao = formatSituacao(aluno.situacao);
+              const situacao = formatSituacao(aluno.situacao, aluno.status);
               return (
                 <TableRow key={aluno.id} hover>
                   <TableCell>

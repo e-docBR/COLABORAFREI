@@ -20,6 +20,7 @@ class AlunoBase(BaseModel):
     nome: str
     turma: str
     turno: str
+    status: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -27,6 +28,7 @@ class AlunoListSchema(AlunoBase):
     id: int
     media: Optional[float] = None
     faltas: Optional[int] = None
+    status: Optional[str] = None
 
 
 class AlunoDetailSchema(AlunoBase):
@@ -48,6 +50,7 @@ class AlunoUpdate(BaseModel):
     nome: Optional[str] = None
     turma: Optional[str] = None
     turno: Optional[str] = None
+    status: Optional[str] = None
 
 class AlunoPaginatedResponse(BaseModel):
     items: List[AlunoListSchema]

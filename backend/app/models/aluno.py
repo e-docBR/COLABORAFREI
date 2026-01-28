@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +14,7 @@ class Aluno(Base, TenantYearMixin):
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     turma: Mapped[str] = mapped_column(String(32), nullable=False)
     turno: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     notas = relationship("Nota", back_populates="aluno", cascade="all, delete-orphan")
     usuario = relationship("Usuario", back_populates="aluno", uselist=False)

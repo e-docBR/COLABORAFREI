@@ -109,9 +109,19 @@ export const NotasPage = () => {
       minWidth: 240,
       renderCell: (params: GridRenderCellParams) => (
         <Box display="flex" flexDirection="column" justifyContent="center" height="100%">
-          <Typography variant="body2" fontWeight={600} fontSize="0.875rem" lineHeight={1.2}>
-            {params.row.alunoName}
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="body2" fontWeight={600} fontSize="0.875rem" lineHeight={1.2}>
+              {params.row.alunoName}
+            </Typography>
+            {params.row.status && (
+              <Chip
+                label={params.row.status}
+                size="small"
+                color={params.row.status === "Transferido" ? "warning" : "error"}
+                sx={{ height: 16, fontSize: "0.6rem", fontWeight: 700 }}
+              />
+            )}
+          </Box>
           <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
             {params.row.turma}
           </Typography>
@@ -223,6 +233,7 @@ export const NotasPage = () => {
     alunoName: nota.aluno?.nome ?? "Aluno sem nome",
     turma: nota.aluno?.turma ?? "",
     disciplina: nota.disciplina,
+    status: nota.aluno?.status,
     trimestre1: nota.trimestre1 ?? null,
     trimestre2: nota.trimestre2 ?? null,
     trimestre3: nota.trimestre3 ?? null,

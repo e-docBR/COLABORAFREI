@@ -113,6 +113,7 @@ export type NotaResumo = {
     nome: string;
     turma: string;
     turno: string;
+    status?: string | null;
   } | null;
 };
 
@@ -139,6 +140,7 @@ export type AlunoSummary = {
   turno: string;
   media?: number | null;
   faltas?: number | null;
+  status?: string | null;
 };
 
 

@@ -26,6 +26,7 @@ def serialize_nota_row(nota: Nota, aluno: Aluno | None = None) -> dict:
             "nome": aluno.nome,
             "turma": aluno.turma,
             "turno": aluno.turno,
+            "status": aluno.status,
         }
     return data
 

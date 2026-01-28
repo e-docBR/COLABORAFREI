@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-01-27
+
+### 🚀 Added
+- **🎓 Student Status Management**:
+    - New field **"Situação Especial"** added to student records.
+    - Supported statuses: **Cancelado**, **Transferido**, and **Desistente**.
+    - **Smart Analytics**: Inactive students (those with a special status) are now automatically excluded from global averages, student counts, and performance charts to ensure data accuracy.
+    - **Visual Indicators**: Specific badges added to student cards, class lists, and individual reports to highlight special situations.
+
+### 🛡️ Access Control & RBAC
+- **Expanded Administrative Autonomy**:
+    - **Coordenador**, **Diretor**, and **Orientador** profiles now have full access to Create, Edit, and Delete student records.
+    - Previously restricted to pure `admin`, this change empowers the pedagogical team for daily student management.
+
+### 🔧 Technical
+- **Database Schema**: Successfully updated `alunos` table with the new `status` column.
+- **REST API**: Enhanced student and grade serialization to include status metadata across all relevant endpoints.
+- **UX**: Unified status formatting logic between Turma and Aluno detail pages for better visual consistency.
+
 ## [1.0.0] - 2026-01-27
 
 ### 🚀 Added

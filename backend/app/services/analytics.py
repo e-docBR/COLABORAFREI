@@ -37,7 +37,7 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
     from loguru import logger
     logger.info("Building dashboard metrics. g.tenant_id: {}, g.academic_year_id: {}", getattr(g, 'tenant_id', None), getattr(g, 'academic_year_id', None))
     
-    total_alunos = session.query(func.count(Aluno.id)).scalar() or 0
+    total_alunos = session.query(func.count(Aluno.id)).filter(Aluno.status.is_(None)).scalar() or 0
     
     # For turmas, we need distinct count.
     # We can use session.query(func.distinct(Aluno.turma)).count() 
@@ -49,12 +49,12 @@ def build_dashboard_metrics(session: Session) -> DashboardAnalytics:
             " ",
         )
     )
-    total_turmas = session.query(func.count(func.distinct(normalized_turma))).scalar() or 0
+    total_turmas = session.query(func.count(func.distinct(normalized_turma))).filter(Aluno.status.is_(None)).scalar() or 0
     
-    media_geral = session.query(func.avg(Nota.total)).scalar()
+    media_geral = session.query(func.avg(Nota.total)).join(Aluno).filter(Aluno.status.is_(None)).scalar()
     media_geral_value = float(media_geral) if media_geral is not None else 0.0
 
-    alunos_em_risco = session.query(func.count(func.distinct(Nota.aluno_id))).filter(Nota.total < 50).scalar() or 0
+    alunos_em_risco = session.query(func.count(func.distinct(Nota.aluno_id))).join(Aluno).filter(Nota.total < 50, Aluno.status.is_(None)).scalar() or 0
 
     return DashboardAnalytics(
         total_alunos=total_alunos,
@@ -73,6 +73,8 @@ def build_teacher_dashboard(session: Session, query: str | None = None, turno: s
         if query:
             term = f"%{query}%"
             stm = stm.where(Aluno.nome.ilike(term) | Aluno.matricula.ilike(term))
+        # Exclude inactive students from all charts and metrics
+        stm = stm.where(Aluno.status.is_(None))
         return stm
 
     # 1. Student Performance Distribution (By Average)

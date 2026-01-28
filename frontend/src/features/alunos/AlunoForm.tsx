@@ -86,6 +86,25 @@ export const AlunoForm = ({ initialData, onSubmit, onCancel, isLoading }: AlunoF
                 ))}
             </TextField>
 
+            <TextField
+                select
+                margin="normal"
+                fullWidth
+                label="Situação Especial"
+                name="status"
+                value={formData.status ?? ""}
+                onChange={handleChange}
+                size="small"
+                helperText="Use apenas para alunos Inativos/Fora da escola"
+            >
+                <MenuItem value="">
+                    <em>Ativo (Nenhum)</em>
+                </MenuItem>
+                <MenuItem value="Cancelado">Cancelado</MenuItem>
+                <MenuItem value="Transferido">Transferido</MenuItem>
+                <MenuItem value="Desistente">Desistente</MenuItem>
+            </TextField>
+
             <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
                 <Button onClick={onCancel}>
                     Cancelar
